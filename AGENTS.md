@@ -264,20 +264,124 @@ interface ApiSuccessResponse<T> {
 
 All methods return `Promise<ApiSuccessResponse<T>>`. The `path` must include the full versioned route (e.g., `'/v1/api/zootag/admin/manufacturers'`). `params` is serialized as query string; objects passed as `filter` use deep object notation (`filter[key]=value`).
 
-### Authentication
+### Authentication (low-level)
 
 ```typescript
+import { apiClient } from '@/lib/api-client';
+
 // After login
 apiClient.setToken(jwtToken);
 
 // Clear on logout
 apiClient.clearToken();
-
-// Check current token
-const token = apiClient.getToken();
 ```
 
 The token is sent as `Authorization: Bearer <token>` on every request.
+
+## Auth System — `src/lib/auth.ts` + `src/contexts/auth-context.tsx`
+
+Complete auth solution for both SSR and CSR, matching the NestJS backend at `/v1/api/core/auth/*`.
+
+### Backend Auth Endpoints
+
+| Method | Path                           | Description               |
+| ------ | ------------------------------ | ------------------------- |
+| POST   | `/v1/api/core/auth/signup`     | Register new user         |
+| POST   | `/v1/api/core/auth/signin`     | Login                     |
+| POST   | `/v1/api/core/auth/refresh`    | Rotate tokens             |
+| POST   | `/v1/api/core/auth/logout`     | Revoke current session    |
+| GET    | `/v1/api/core/auth/sessions`   | List active sessions      |
+| DELETE | `/v1/api/core/auth/sessions/:id` | Revoke specific session |
+
+### Auth Response (from signin / signup / refresh)
+
+```typescript
+interface AuthResponse {
+  access_token: string;            // JWT (Bearer)
+  expires_in: number;              // seconds (default 900 = 15min)
+  expires_at: string;              // ISO timestamp
+  refresh_token: string;           // raw refresh token
+  refresh_token_expires_at: string; // ISO timestamp (default 7 days)
+  session_id: number;              // CoreSession DB id
+}
+```
+
+### CSR Usage — `useAuth()` hook
+
+Wrap the app with `AuthProvider`, then use `useAuth()` in client components:
+
+```tsx
+// app/layout.tsx
+import { AuthProvider } from '@/contexts/auth-context';
+
+export default function RootLayout({ children }) {
+  return (
+    <html>
+      <body>
+        <AuthProvider>{children}</AuthProvider>
+      </body>
+    </html>
+  );
+}
+```
+
+```tsx
+'use client';
+import { useAuth } from '@/contexts/auth-context';
+
+function LoginPage() {
+  const { signin, isAuthenticated, isLoading } = useAuth();
+  // ...
+  await signin(username, password);
+}
+```
+
+Available from `useAuth()`:
+
+| Method            | Returns                              | Description                    |
+| ----------------- | -----------------------------------  | ------------------------------ |
+| `signin`          | `Promise<AuthResponse>`              | Login + store tokens           |
+| `signup`          | `Promise<AuthResponse>`              | Register + store tokens        |
+| `logout`          | `Promise<void>`                      | Logout + clear tokens          |
+| `refreshSession`  | `Promise<AuthResponse \| null>`      | Refresh access token           |
+| `getToken`        | `string \| null`                     | Current access token           |
+| `isAuthenticated` | `boolean`                            | Whether token exists           |
+| `isLoading`       | `boolean`                            | True while restoring on mount  |
+
+### SSR Protection — `proxy.ts`
+
+Next.js 16 proxy (replaces middleware) checks the `access_token` cookie and redirects unauthenticated requests to `/login`:
+
+```typescript
+const publicPaths = ['/login', '/signup', '/api/auth/refresh'];
+```
+
+### Token Refresh
+
+**CSR path** — tokens are stored in cookies. `refreshSession()` reads them and calls `/v1/api/core/auth/refresh`, then stores new tokens.
+
+**SSR path** — the `/api/auth/refresh` Next.js API route reads tokens from headers (passed by CSR) and refreshes through the backend, setting new httpOnly cookies.
+
+### Storage Strategy
+
+| Cookie           | Type         | Purpose                          |
+| ---------------- | ------------ | -------------------------------- |
+| `access_token`   | non-httpOnly | Bearer token for API calls       |
+| `refresh_token`  | non-httpOnly | Used to refresh access token     |
+| `session_id`     | non-httpOnly | Required for token refresh       |
+
+### Standalone Auth Functions
+
+```typescript
+import { signin, signup, logout, refreshTokens, fetchSessions, checkUsername } from '@/lib/auth';
+
+await signin({ username: 'admin', password: 'secret' });
+await signup({ username: 'newuser', password: 'secret' });
+await logout();
+await refreshTokens({ refresh_token: '...', sessionId: 1 });
+const sessions = await fetchSessions();
+const isAvailable = await checkUsername('admin');
+```
 
 ### Error Handling
 
