@@ -262,7 +262,7 @@ interface ApiSuccessResponse<T> {
 | `put`  | `put<T>(path, body?, signal?)`                      |
 | `delete` | `delete<T>(path, signal?)`                        |
 
-All methods return `Promise<ApiSuccessResponse<T>>`. The `path` must include the full versioned route (e.g., `'/v1/api/zootag/admin/manufacturers'`). `params` is serialized as query string; objects passed as `filter` use deep object notation (`filter[key]=value`).
+All methods return `Promise<ApiSuccessResponse<T>>`. The `path` must include the full versioned route (e.g., `'/v1/api/zootag/admin/manufacturers'`). `params` is serialized as flat query string by default (e.g., `{ limit: 10, offset: 0 }` → `?limit=10&offset=0`). Objects passed as `filter` use deep object notation (`filter[key]=value`) — but prefer flat params since the backend `ListFilter` DTO expects them at the top level.
 
 ### Authentication (low-level)
 
@@ -406,27 +406,10 @@ try {
 ### Usage Examples
 
 ```typescript
-// Fetch paginated list with filter
-const { result, total } = await apiClient.get<DeviceType[]>('/v1/api/zootag/admin/device-types', {
-  filter: { limit: 10, offset: 0, search: 'GPS' },
+// Fetch paginated list — flat params (NOT under filter)
+const { result, total } = await apiClient.get<DeviceType[]>('/v1/api/zootag/admin/deviceTypes', {
+  limit: 10, offset: 0, search: 'GPS',
 });
-
-// Fetch single item
-const { result: manufacturer } = await apiClient.get<Manufacturer>(
-  '/v1/api/zootag/admin/manufacturers/1',
-);
-
-// Create
-const { result: created } = await apiClient.post<Manufacturer>(
-  '/v1/api/zootag/admin/manufacturers',
-  { manufacturerName: 'Samsung', isActive: true },
-);
-
-// Update
-await apiClient.put('/v1/api/zootag/admin/manufacturers/1', { manufacturerName: 'Samsung Electronics' });
-
-// Delete
-await apiClient.delete('/v1/api/zootag/admin/manufacturers/1');
 ```
 
 ## Menus Endpoint
@@ -444,6 +427,153 @@ apiClient.get<MenuNode[]>('/v1/api/core/user/menus', { filter: { ignorePaging: t
 ```
 
 The response is an array of `MenuNode` objects with recursive `subMenus`.
+
+## CRUD Architecture
+
+Every admin page that has full CRUD (POST/PUT/DELETE) from the backend follows a consistent pattern:
+
+### Components
+
+| Component | Purpose |
+|---|---|
+| `CrudModal` | Modal dialog with form for create/edit |
+| `ConfirmDialog` | Modal dialog for delete confirmation |
+| `LookupDialog` | Searchable, paginated modal with mini DataTable for FK entity lookup. Header has `افزودن` button for inline CRUD. Each row has one `انتخاب` button (no edit/delete) |
+| `DataTable` | Server-side paginated table (list view) |
+
+All are imported from `@/components/ui`.
+
+### Page Pattern (simple entity with no FK)
+
+```tsx
+import { useState } from 'react';
+import { DataTable, CrudModal, ConfirmDialog } from '@/components/ui';
+import type { Column, FieldDef } from '@/components/ui';
+import { apiClient, ApiError } from '@/lib/api-client';
+
+interface Entity { id: number; /* ...fields */ }
+
+const modalFields: FieldDef[] = [
+  { name: 'fieldName', label: 'Field Label', type: 'string', required: true },
+];
+
+export default function EntityPage() {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
+  const [selected, setSelected] = useState<Entity | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Entity | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  // ... handlers ...
+  return (
+    <div>
+      <button onClick={handleCreate}>افزودن</button>
+      <DataTable key={refreshKey} ... />
+      <CrudModal ... />
+      <ConfirmDialog ... />
+    </div>
+  );
+}
+```
+
+### FieldDef Type
+
+```typescript
+interface FieldDef {
+  name: string;
+  label: string;
+  type: 'string' | 'number' | 'boolean' | 'select' | 'textarea' | 'date';
+  required?: boolean;
+  placeholder?: string;
+  options?: { value: string | number; label: string }[];
+  minLength?: number;
+  maxLength?: number;
+}
+```
+
+### FK Reference Handling
+
+Two strategies for FK fields in create/edit forms:
+
+1. **Status tables** (e.g. `DeviceStatus`, `ContractStatus`) — Use a `<select>` element rendered via `renderCustomField` prop on `CrudModal`. Options are fetched from the status endpoint (e.g. `/v1/api/zootag/admin/deviceStatuses`) when the modal opens.
+
+2. **Regular entity lookups** (e.g. `Manufacturer`, `Company`, `Currency`, `DeviceType`) — Use `LookupDialog` opened via `renderCustomField`. The dialog shows a searchable, paginated mini DataTable with inline CRUD (`افزودن` button in header) for the lookup entity. Each row has a single "انتخاب" button — edit/delete icons are NOT shown in the lookup table. Selecting a row fills the FK field and closes the dialog.
+
+#### Pattern for FK Lookups (example with manufacturerId):
+
+```tsx
+const lookupConfig: LookupConfig = {
+  endpoint: '/v1/api/...', labelKey: 'name', valueKey: 'id',
+  title: 'Title', columns: [...], formFields: [...],
+};
+
+// In page component state:
+const [selectedLookupId, setSelectedLookupId] = useState<number | null>(null);
+const [selectedLookupName, setSelectedLookupName] = useState('');
+const [lookupOpen, setLookupOpen] = useState(false);
+const pendingOnChangeRef = useRef<((v: unknown) => void) | null>(null);
+
+// In renderCustomField:
+if (field.name === 'fkFieldName') {
+  return (
+    <div>
+      <input type="text" value={selectedLookupName} disabled />
+      <button onClick={() => setLookupOpen(true)}>انتخاب</button>
+      <button onClick={() => { setSelectedLookupId(null); setSelectedLookupName(''); }}>×</button>
+    </div>
+  );
+}
+```
+
+#### Pattern for Status Select (example with deviceStatusId):
+
+```tsx
+useEffect(() => {
+  if (!modalOpen) return;
+  apiClient.get('/v1/api/.../deviceStatuses').then(({ result }) =>
+    setStatusOptions(result.map(s => ({ value: s.id, label: s.name })))
+  );
+}, [modalOpen]);
+
+// In renderCustomField:
+if (field.name === 'deviceStatusId') {
+  return (
+    <select value={selectedStatusId ?? ''} onChange={...}>
+      {statusOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+    </select>
+  );
+}
+```
+
+### Pages Summary
+
+| Page | Backend Endpoint | CRUD | FKs |
+|---|---|---|---|
+| Users | `/v1/api/core/admin/users` | Create/Edit (no DELETE) | roles (omitted) |
+| Roles | `/v1/api/core/admin/roles` | Full | permissions (omitted) |
+| Permissions | `/v1/api/core/admin/permissions` | Read-only | — |
+| Permission Groups | `/v1/api/core/admin/permissionGroups` | Read-only | — |
+| Menus | `/v1/api/core/admin/menus` | Create/Edit (no DELETE) | parentMenuId (omitted) |
+| Manufacturers | `/v1/api/zootag/admin/manufacturers` | Full | — |
+| Currencies | `/v1/api/zootag/admin/currencies` | Full | — |
+| Companies | `/v1/api/zootag/admin/companies` | Full | — |
+| Device Types | `/v1/api/zootag/admin/deviceTypes` | Full | manufacturerId (lookup) |
+| Contracts | `/v1/api/zootag/admin/contracts` | Full | companyId (lookup), currencyId (lookup), contractStatusId (select) |
+| Devices | `/v1/api/zootag/admin/devices` | Full | companyId (lookup), deviceTypeId (lookup), deviceStatusId (select) |
+
+### Re-fetch After CRUD
+
+The DataTable uses `key={refreshKey}` to force re-mount and re-fetch after any create/edit/delete. Increment `refreshKey` after successful API call. The LookupDialog also uses the same pattern internally (`key` through `refreshKey` state).
+
+**Important**: Do NOT use `filter: { ... }` wrapper for pagination params. Send `limit`, `offset`, `search` as flat top-level keys. The backend `ListFilter` DTO expects them at the query root (e.g., `?limit=10&offset=0`), not nested under `filter`.
+
+### Known Issues
+
+- `roles` FK on Users and `permissions` FK on Roles omitted from forms (multi-select complex — manage via dedicated Role/Permission management pages)
+- `parentMenuId` FK on Menus omitted (self-referencing — manage via direct DB or API)
+- Pre-existing lint error in `src/components/ui/crud-modal.tsx:78` (setState-in-effect, not related to CRUD changes)
+- Pre-existing lint warning in `src/components/ui/persian-date-picker.tsx:63` (setState-in-effect, not related to CRUD changes)
 
 ## Backend Reference
 
