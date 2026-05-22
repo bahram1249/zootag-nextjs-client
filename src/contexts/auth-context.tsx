@@ -65,6 +65,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    const handler = () => {
+      clearTokens();
+      setState({ isAuthenticated: false, isLoading: false, user: null });
+    };
+    window.addEventListener('auth:expired', handler);
+    return () => window.removeEventListener('auth:expired', handler);
+  }, []);
+
   const signinFn = useCallback(async (username: string, password: string) => {
     const result = await apiSignin({ username, password });
     const user = await fetchProfile();
