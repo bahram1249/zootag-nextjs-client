@@ -20,7 +20,7 @@ export function LoginForm() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!username.trim() || !password) {
-      setError('Please fill in all fields');
+      setError('لطفاً تمام فیلدها را پر کنید');
       return;
     }
 
@@ -29,13 +29,13 @@ export function LoginForm() {
 
     try {
       await signin(username.trim(), password);
-      const redirect = searchParams.get('redirect') || '/dashboard';
+      const redirect = searchParams.get('redirect') || '/admin';
       router.push(redirect);
     } catch (err) {
       if (err instanceof ApiError) {
-        setError(err.message || 'Invalid credentials');
+        setError(err.message || 'نام کاربری یا رمز عبور اشتباه است');
       } else {
-        setError('An unexpected error occurred');
+        setError('خطای غیرمنتظره‌ای رخ داد');
       }
       usernameRef.current?.focus();
     } finally {
@@ -66,10 +66,10 @@ export function LoginForm() {
             </svg>
           </div>
           <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
-            Welcome back
+            خوش آمدید
           </h1>
           <p className="mt-1 text-sm text-muted">
-            Sign in to your account to continue
+            برای ادامه وارد حساب کاربری خود شوید
           </p>
         </div>
 
@@ -105,8 +105,8 @@ export function LoginForm() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
             ref={usernameRef}
-            label="Username"
-            placeholder="Enter your username"
+            label="نام کاربری"
+            placeholder="نام کاربری خود را وارد کنید"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             disabled={loading}
@@ -115,9 +115,9 @@ export function LoginForm() {
           />
 
           <Input
-            label="Password"
+            label="رمز عبور"
             type="password"
-            placeholder="Enter your password"
+            placeholder="رمز عبور خود را وارد کنید"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={loading}
@@ -158,25 +158,25 @@ export function LoginForm() {
                 />
               </svg>
             ) : null}
-            {loading ? 'Signing in...' : 'Sign in'}
+            {loading ? 'در حال ورود...' : 'ورود'}
           </button>
         </form>
 
         {/* divider */}
         <div className="mt-6 flex items-center gap-3">
           <div className="flex-1 border-t border-border dark:border-zinc-700" />
-          <span className="text-xs text-muted">OR</span>
+          <span className="text-xs text-muted">یا</span>
           <div className="flex-1 border-t border-border dark:border-zinc-700" />
         </div>
 
         {/* signup link */}
         <p className="mt-6 text-center text-sm text-muted">
-          Don&apos;t have an account?{' '}
+          حساب کاربری ندارید؟{' '}
           <a
             href="/signup"
             className="font-medium text-primary hover:text-primary-hover transition-colors"
           >
-            Create one
+            ایجاد حساب
           </a>
         </p>
       </div>

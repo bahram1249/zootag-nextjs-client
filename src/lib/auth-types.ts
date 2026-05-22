@@ -32,3 +32,30 @@ export interface AuthTokens {
   refresh_token: string;
   session_id: number;
 }
+
+export interface MenuNode {
+  id: number;
+  title: string;
+  url: string;
+  icon: string;
+  className: string;
+  parentMenuId?: number | null;
+  order?: number;
+  subMenus?: MenuNode[];
+}
+
+export interface UserProfile {
+  id: number;
+  username?: string;
+  firstname?: string;
+  lastname?: string;
+  birthDate?: string;
+  profileAttachment?: {
+    id: number;
+    originalFileName: string;
+    fileName: string;
+    mimetype: string;
+    createdAt: string;
+    updatedAt: string;
+  } | null;
+}

@@ -429,6 +429,22 @@ await apiClient.put('/v1/api/zootag/admin/manufacturers/1', { manufacturerName: 
 await apiClient.delete('/v1/api/zootag/admin/manufacturers/1');
 ```
 
+## Menus Endpoint
+
+`GET /v1/api/core/user/menus` — returns the menu tree for the current authenticated user based on their roles/permissions.
+
+**Parameters**: pass flat query params (NOT nested under `filter`):
+
+```typescript
+// Correct — flat params
+apiClient.get<MenuNode[]>('/v1/api/core/user/menus', { ignorePaging: true });
+
+// Wrong — do NOT use filter object for this endpoint
+apiClient.get<MenuNode[]>('/v1/api/core/user/menus', { filter: { ignorePaging: true } });
+```
+
+The response is an array of `MenuNode` objects with recursive `subMenus`.
+
 ## Backend Reference
 
 See the root [AGENTS.md](../AGENTS.md) for backend API structure and the NestJS monorepo patterns in [zootag-nestjs-api/](../zootag-nestjs-api/).

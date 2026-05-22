@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui';
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { isAuthenticated, isLoading, refreshSession, getToken, logout } = useAuth();
+  const { isAuthenticated, isLoading, refreshSession, logout } = useAuth();
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -31,7 +31,7 @@ export default function DashboardPage() {
   if (!isAuthenticated) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p className="text-sm text-muted">Redirecting...</p>
+        <p className="text-sm text-muted">در حال انتقال...</p>
       </div>
     );
   }
@@ -40,9 +40,9 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       <header className="border-b border-border bg-white dark:bg-zinc-900 dark:border-zinc-700">
         <div className="mx-auto flex h-14 max-w-4xl items-center justify-between px-4">
-          <h1 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Zootag</h1>
+          <h1 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">زوتگ</h1>
           <div className="flex items-center gap-3">
-            <Badge variant="success" size="sm">Authenticated</Badge>
+            <Badge variant="success" size="sm">احراز هویت شده</Badge>
             <button
               onClick={async () => {
                 await logout();
@@ -50,14 +50,14 @@ export default function DashboardPage() {
               }}
               className="text-xs text-muted hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors"
             >
-              Sign out
+              خروج
             </button>
           </div>
         </div>
       </header>
       <main className="mx-auto max-w-4xl px-4 py-8">
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Dashboard</h2>
-        <p className="mt-1 text-sm text-muted">You are signed in.</p>
+        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">داشبورد</h2>
+        <p className="mt-1 text-sm text-muted">شما وارد شده‌اید.</p>
       </main>
     </div>
   );

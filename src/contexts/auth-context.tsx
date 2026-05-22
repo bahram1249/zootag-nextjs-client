@@ -1,10 +1,9 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import type { AuthResponse } from '@/lib/auth-types';
+import type { AuthResponse, UserProfile } from '@/lib/auth-types';
 import {
   getStoredTokens,
-  storeTokens,
   clearTokens,
   signin as apiSignin,
   signup as apiSignup,
@@ -17,7 +16,7 @@ import { apiClient } from '@/lib/api-client';
 interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
-  user: null;
+  user: UserProfile | null;
 }
 
 interface AuthContextValue extends AuthState {
@@ -30,32 +29,53 @@ interface AuthContextValue extends AuthState {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AuthState>({
-    isAuthenticated: false,
-    isLoading: true,
+async function fetchProfile() {
+  try {
+    const { result } = await apiClient.get<UserProfile>('/v1/api/core/user/profile');
+    return result;
+  } catch {
+    return null;
+  }
+}
+
+function initState(): AuthState {
+  const tokens = getStoredTokens();
+  if (tokens) {
+    apiClient.setToken(tokens.access_token);
+  }
+  return {
+    isAuthenticated: !!tokens,
+    isLoading: !!tokens,
     user: null,
-  });
+  };
+}
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [state, setState] = useState<AuthState>(initState);
 
   useEffect(() => {
-    const tokens = getStoredTokens();
-    if (tokens) {
-      apiClient.setToken(tokens.access_token);
-      setState({ isAuthenticated: true, isLoading: false, user: null });
-    } else {
-      setState({ isAuthenticated: false, isLoading: false, user: null });
-    }
+    if (!state.isAuthenticated) return;
+    let cancelled = false;
+    fetchProfile().then((user) => {
+      if (cancelled) return;
+      setState((prev) => ({ ...prev, isLoading: false, user }));
+    });
+    return () => { cancelled = true; };
+    // only run on mount when isAuthenticated is determined from initState
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const signinFn = useCallback(async (username: string, password: string) => {
     const result = await apiSignin({ username, password });
-    setState({ isAuthenticated: true, isLoading: false, user: null });
+    const user = await fetchProfile();
+    setState({ isAuthenticated: true, isLoading: false, user });
     return result;
   }, []);
 
   const signupFn = useCallback(async (username: string, password: string) => {
     const result = await apiSignup({ username, password });
-    setState({ isAuthenticated: true, isLoading: false, user: null });
+    const user = await fetchProfile();
+    setState({ isAuthenticated: true, isLoading: false, user });
     return result;
   }, []);
 
@@ -72,7 +92,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         refresh_token: tokens.refresh_token,
         sessionId: tokens.session_id,
       });
-      setState({ isAuthenticated: true, isLoading: false, user: null });
+      const user = await fetchProfile();
+      setState({ isAuthenticated: true, isLoading: false, user });
       return result;
     } catch {
       clearTokens();

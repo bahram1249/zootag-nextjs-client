@@ -42,6 +42,7 @@ export function getStoredTokens(): AuthTokens | null {
 
 export function storeTokens(tokens: AuthTokens): void {
   setCookie(ACCESS_TOKEN_KEY, tokens.access_token, 7);
+  setCookie(REFRESH_TOKEN_KEY, tokens.refresh_token, 7);
   setCookie(SESSION_ID_KEY, String(tokens.session_id), 7);
   apiClient.setToken(tokens.access_token);
 }
