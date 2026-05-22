@@ -15,6 +15,7 @@ interface DataTableProps<T> {
   title: string;
   description?: string;
   defaultLimit?: number;
+  ignorePaging?: boolean;
 }
 
 export function DataTable<T extends Record<string, unknown>>({
@@ -23,6 +24,7 @@ export function DataTable<T extends Record<string, unknown>>({
   title,
   description,
   defaultLimit = 10,
+  ignorePaging = false,
 }: DataTableProps<T>) {
   const [data, setData] = useState<T[]>([]);
   const [total, setTotal] = useState(0);
@@ -46,14 +48,17 @@ export function DataTable<T extends Record<string, unknown>>({
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
 
+    const params: Record<string, unknown> = {};
+    if (ignorePaging) {
+      params.ignorePaging = true;
+    } else {
+      params.limit = limit;
+      params.offset = offset;
+      if (debouncedSearch) params.search = debouncedSearch;
+    }
+
     apiClient
-      .get<T[]>(apiEndpoint, {
-        filter: {
-          limit,
-          offset,
-          ...(debouncedSearch ? { search: debouncedSearch } : {}),
-        },
-      })
+      .get<T[]>(apiEndpoint, params)
       .then(({ result, total: count }) => {
         if (!cancelled) {
           setData(result);
@@ -73,10 +78,10 @@ export function DataTable<T extends Record<string, unknown>>({
     return () => {
       cancelled = true;
     };
-  }, [apiEndpoint, limit, offset, debouncedSearch]);
+  }, [apiEndpoint, limit, offset, debouncedSearch, ignorePaging]);
 
-  const totalPages = Math.max(1, Math.ceil(total / limit));
-  const currentPage = Math.floor(offset / limit) + 1;
+  const totalPages = total > 0 ? Math.ceil(total / limit) : 0;
+  const currentPage = totalPages > 0 ? Math.floor(offset / limit) + 1 : 0;
 
   return (
     <div className="flex flex-1 flex-col">
@@ -158,55 +163,55 @@ export function DataTable<T extends Record<string, unknown>>({
         )}
       </div>
 
-      {/* pagination */}
-      <div className="mt-3 flex items-center justify-between text-sm">
-        <p className="text-muted">
-          {total > 0
-            ? `${Math.min(offset + 1, total)}-${Math.min(offset + limit, total)} از ${total}`
-            : '۰ نتیجه'}
-        </p>
-        <div className="flex items-center gap-1.5">
-          <button
-            onClick={() => setOffset((p) => Math.max(0, p - limit))}
-            disabled={currentPage <= 1}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-surface text-muted transition-colors hover:bg-surface-secondary disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <svg className="h-4 w-4 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
+      {/* pagination — only when paging is enabled and there's data */}
+      {!ignorePaging && totalPages > 0 && (
+        <div className="mt-3 flex items-center justify-between text-sm">
+          <p className="text-muted">
+            {`${Math.min(offset + 1, total)}-${Math.min(offset + limit, total)} از ${total}`}
+          </p>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setOffset((p) => Math.max(0, p - limit))}
+              disabled={currentPage <= 1}
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-surface text-muted transition-colors hover:bg-surface-secondary disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <svg className="h-4 w-4 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
 
-          {Array.from({ length: totalPages }, (_, i) => i + 1)
-            .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
-            .map((p, idx, arr) => (
-              <span key={p} className="flex items-center gap-1.5">
-                {idx > 0 && arr[idx - 1] !== p - 1 && (
-                  <span className="px-1 text-muted">...</span>
-                )}
-                <button
-                  onClick={() => setOffset((p - 1) * limit)}
-                  className={`flex h-8 min-w-[2rem] items-center justify-center rounded-lg px-2 text-sm font-medium transition-colors ${
-                    p === currentPage
-                      ? 'bg-primary text-white'
-                      : 'text-muted hover:bg-surface-secondary'
-                  }`}
-                >
-                  {p}
-                </button>
-              </span>
-            ))}
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+              .map((p, idx, arr) => (
+                <span key={p} className="flex items-center gap-1.5">
+                  {idx > 0 && arr[idx - 1] !== p - 1 && (
+                    <span className="px-1 text-muted">...</span>
+                  )}
+                  <button
+                    onClick={() => setOffset((p - 1) * limit)}
+                    className={`flex h-8 min-w-[2rem] items-center justify-center rounded-lg px-2 text-sm font-medium transition-colors ${
+                      p === currentPage
+                        ? 'bg-primary text-white'
+                        : 'text-muted hover:bg-surface-secondary'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                </span>
+              ))}
 
-          <button
-            onClick={() => setOffset((p) => p + limit)}
-            disabled={currentPage >= totalPages}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-surface text-muted transition-colors hover:bg-surface-secondary disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <svg className="h-4 w-4 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
+            <button
+              onClick={() => setOffset((p) => p + limit)}
+              disabled={currentPage >= totalPages}
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-surface text-muted transition-colors hover:bg-surface-secondary disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <svg className="h-4 w-4 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

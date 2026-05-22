@@ -6,16 +6,34 @@ import { useAuth } from '@/contexts/auth-context';
 import { fetchMenus } from '@/lib/menus';
 import type { MenuNode } from '@/lib/auth-types';
 
+function toFrontendUrl(backendUrl: string | null): string {
+  if (!backendUrl) return '#';
+  if (backendUrl.startsWith('/core/admin/')) {
+    const name = backendUrl.replace('/core/admin/', '');
+    const mapped: Record<string, string> = {
+      users: '/admin/users',
+      roles: '/admin/roles',
+      permissions: '/admin/permissions',
+      menus: '/admin/menus',
+      permissionGroups: '/admin/permission-groups',
+    };
+    return mapped[name] ?? backendUrl;
+  }
+  if (backendUrl.startsWith('/admin/')) return backendUrl;
+  return backendUrl;
+}
+
 function MenuItem({ node, depth }: { node: MenuNode; depth: number }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const hasChildren = node.subMenus && node.subMenus.length > 0;
-  const isActive = pathname === node.url || pathname.startsWith(node.url + '/');
+  const href = toFrontendUrl(node.url);
+  const isActive = pathname === href || pathname.startsWith(href + '/');
 
   return (
     <div>
       <a
-        href={node.url}
+        href={href}
         onClick={(e) => {
           if (hasChildren) {
             e.preventDefault();
