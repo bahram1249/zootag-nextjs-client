@@ -105,11 +105,12 @@ export async function fetchData<T>(endpoint: string): Promise<T> {
 
 ## Environment Variables
 
-Create a `.env.local` file for local development:
+Required variables — add to `.env.local`:
 
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:3000
-```
+NEXT_PUBLIC_BACKEND_API_URL=http://localhost:3000
+
+The API client uses this value as-is (no `/api` suffix appended). Include the full versioned path in every request, e.g. `/v1/api/zootag/admin/manufacturers`.
 
 ## UI Component Library — `src/components/ui/`
 
@@ -226,6 +227,103 @@ Usage:
 ```
 
 Props: `label`, `value` (Date), `onChange`, `error`, `helperText`, `placeholder`, `disabled`.
+
+## API Client — `src/lib/api-client.ts`
+
+A typed fetch wrapper matching the NestJS backend's JSON response format. Import the singleton:
+
+```typescript
+import { apiClient, ApiError } from '@/lib/api-client';
+import type { ApiSuccessResponse } from '@/lib/api-types';
+```
+
+### Response Envelope
+
+Every backend response follows this envelope:
+
+```typescript
+interface ApiSuccessResponse<T> {
+  statusCode: number;
+  reqId: string;
+  message: string;
+  result: T;            // single object or array
+  timestamp: string;
+  path: string;
+  total?: number;       // present on paginated list endpoints
+}
+```
+
+### Methods
+
+| Method | Signature                                           |
+| ------ | --------------------------------------------------- |
+| `get`  | `get<T>(path, params?, signal?)`                    |
+| `post` | `post<T>(path, body?, signal?)`                     |
+| `put`  | `put<T>(path, body?, signal?)`                      |
+| `delete` | `delete<T>(path, signal?)`                        |
+
+All methods return `Promise<ApiSuccessResponse<T>>`. The `path` must include the full versioned route (e.g., `'/v1/api/zootag/admin/manufacturers'`). `params` is serialized as query string; objects passed as `filter` use deep object notation (`filter[key]=value`).
+
+### Authentication
+
+```typescript
+// After login
+apiClient.setToken(jwtToken);
+
+// Clear on logout
+apiClient.clearToken();
+
+// Check current token
+const token = apiClient.getToken();
+```
+
+The token is sent as `Authorization: Bearer <token>` on every request.
+
+### Error Handling
+
+On non-2xx responses, the client throws an `ApiError`:
+
+```typescript
+import { ApiError } from '@/lib/api-client';
+
+try {
+  const res = await apiClient.get<Manufacturer[]>('/v1/api/zootag/admin/manufacturers');
+  // res.result is typed as Manufacturer[]
+  // res.total is the count
+} catch (error) {
+  if (error instanceof ApiError) {
+    console.error(error.statusCode); // 404, 400, etc.
+    console.error(error.message);    // "Manufacturer not found"
+    console.error(error.errors);     // ["Manufacturer not found"]
+  }
+}
+```
+
+### Usage Examples
+
+```typescript
+// Fetch paginated list with filter
+const { result, total } = await apiClient.get<DeviceType[]>('/v1/api/zootag/admin/device-types', {
+  filter: { limit: 10, offset: 0, search: 'GPS' },
+});
+
+// Fetch single item
+const { result: manufacturer } = await apiClient.get<Manufacturer>(
+  '/v1/api/zootag/admin/manufacturers/1',
+);
+
+// Create
+const { result: created } = await apiClient.post<Manufacturer>(
+  '/v1/api/zootag/admin/manufacturers',
+  { manufacturerName: 'Samsung', isActive: true },
+);
+
+// Update
+await apiClient.put('/v1/api/zootag/admin/manufacturers/1', { manufacturerName: 'Samsung Electronics' });
+
+// Delete
+await apiClient.delete('/v1/api/zootag/admin/manufacturers/1');
+```
 
 ## Backend Reference
 
