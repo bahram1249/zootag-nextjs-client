@@ -5,9 +5,9 @@ const ACCESS_TOKEN_KEY = 'access_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
 const SESSION_ID_KEY = 'session_id';
 
-function setCookie(name: string, value: string, days: number, httpOnly = false): void {
+function setCookie(name: string, value: string, ms: number, httpOnly = false): void {
   if (typeof document === 'undefined') return;
-  const expires = new Date(Date.now() + days * 864e5).toUTCString();
+  const expires = new Date(Date.now() + ms).toUTCString();
   const httpOnlyFlag = httpOnly ? '; HttpOnly' : '';
   document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax${httpOnlyFlag}`;
 }
@@ -41,9 +41,10 @@ export function getStoredTokens(): AuthTokens | null {
 }
 
 export function storeTokens(tokens: AuthTokens): void {
-  setCookie(ACCESS_TOKEN_KEY, tokens.access_token, 7);
-  setCookie(REFRESH_TOKEN_KEY, tokens.refresh_token, 7);
-  setCookie(SESSION_ID_KEY, String(tokens.session_id), 7);
+  const refreshMs = new Date(tokens.refresh_token_expires_at).getTime() - Date.now();
+  setCookie(ACCESS_TOKEN_KEY, tokens.access_token, tokens.expires_in * 1000);
+  setCookie(REFRESH_TOKEN_KEY, tokens.refresh_token, refreshMs);
+  setCookie(SESSION_ID_KEY, String(tokens.session_id), refreshMs);
   apiClient.setToken(tokens.access_token);
 }
 
@@ -60,6 +61,8 @@ export async function signin(dto: AuthDto): Promise<AuthResponse> {
     access_token: result.access_token,
     refresh_token: result.refresh_token,
     session_id: result.session_id,
+    expires_in: result.expires_in,
+    refresh_token_expires_at: result.refresh_token_expires_at,
   });
   return result;
 }
@@ -70,6 +73,8 @@ export async function signup(dto: AuthDto): Promise<AuthResponse> {
     access_token: result.access_token,
     refresh_token: result.refresh_token,
     session_id: result.session_id,
+    expires_in: result.expires_in,
+    refresh_token_expires_at: result.refresh_token_expires_at,
   });
   return result;
 }
@@ -80,6 +85,8 @@ export async function refreshTokens(dto: RefreshDto): Promise<AuthResponse> {
     access_token: result.access_token,
     refresh_token: result.refresh_token,
     session_id: result.session_id,
+    expires_in: result.expires_in,
+    refresh_token_expires_at: result.refresh_token_expires_at,
   });
   return result;
 }

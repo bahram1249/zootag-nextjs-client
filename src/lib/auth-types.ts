@@ -31,6 +31,8 @@ export interface AuthTokens {
   access_token: string;
   refresh_token: string;
   session_id: number;
+  expires_in?: number;
+  refresh_token_expires_at?: string;
 }
 
 export interface MenuNode {
