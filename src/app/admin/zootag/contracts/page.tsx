@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import persianDate from 'persian-date';
 
 import { DataTable, CrudModal, ConfirmDialog, LookupDialog } from '@/components/ui';
 import type { Column, FieldDef, LookupConfig } from '@/components/ui';
@@ -80,7 +81,7 @@ export default function ContractsPage() {
   const [selectedCurrencyId, setSelectedCurrencyId] = useState<number | null>(null);
   const [selectedCurrencyName, setSelectedCurrencyName] = useState('');
   const [selectedContractStatusId, setSelectedContractStatusId] = useState<number | null>(null);
-  const [_selectedContractStatusName, setSelectedContractStatusName] = useState('');
+  const [selectedContractStatusName, setSelectedContractStatusName] = useState('');
   const [contractStatusOptions, setContractStatusOptions] = useState<{ value: number; label: string }[]>([]);
   const [lookupConfig, setLookupConfig] = useState<LookupConfig | null>(null);
   const [lookupOpen, setLookupOpen] = useState(false);
@@ -167,18 +168,20 @@ export default function ContractsPage() {
     field: FieldDef,
     value: unknown,
     onChange: (v: unknown) => void,
-    _error?: string,
+    error?: string,
   ) => {
     if (field.name === 'companyId') {
       return (
         <div key={field.name}>
           <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            {field.label}
+            {field.label} {field.required && <span className="text-danger">*</span>}
           </label>
           <div className="flex items-center gap-2">
             <input
               type="text"
-              className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100"
+              className={`flex-1 rounded-lg border bg-surface px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 ${
+                error ? 'border-danger' : 'border-border'
+              }`}
               value={selectedCompanyName}
               disabled
               placeholder="شرکت را انتخاب کنید"
@@ -208,6 +211,7 @@ export default function ContractsPage() {
               </button>
             )}
           </div>
+          {error && <p className="mt-1 text-xs text-danger">{error}</p>}
         </div>
       );
     }
@@ -216,12 +220,14 @@ export default function ContractsPage() {
       return (
         <div key={field.name}>
           <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            {field.label}
+            {field.label} {field.required && <span className="text-danger">*</span>}
           </label>
           <div className="flex items-center gap-2">
             <input
               type="text"
-              className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100"
+              className={`flex-1 rounded-lg border bg-surface px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 ${
+                error ? 'border-danger' : 'border-border'
+              }`}
               value={selectedCurrencyName}
               disabled
               placeholder="ارز را انتخاب کنید"
@@ -251,6 +257,7 @@ export default function ContractsPage() {
               </button>
             )}
           </div>
+          {error && <p className="mt-1 text-xs text-danger">{error}</p>}
         </div>
       );
     }
@@ -259,7 +266,7 @@ export default function ContractsPage() {
       return (
         <div key={field.name}>
           <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            {field.label}
+            {field.label} {field.required && <span className="text-danger">*</span>}
           </label>
           <select
             value={selectedContractStatusId ?? ''}
@@ -270,7 +277,9 @@ export default function ContractsPage() {
               setSelectedContractStatusName(option?.label ?? '');
               onChange(id);
             }}
-            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100"
+            className={`w-full rounded-lg border bg-surface px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 ${
+              error ? 'border-danger' : 'border-border'
+            }`}
           >
             <option value="">انتخاب وضعیت...</option>
             {contractStatusOptions.map((opt) => (
@@ -279,6 +288,7 @@ export default function ContractsPage() {
               </option>
             ))}
           </select>
+          {error && <p className="mt-1 text-xs text-danger">{error}</p>}
         </div>
       );
     }
@@ -286,12 +296,19 @@ export default function ContractsPage() {
     return null;
   };
 
+  function formatPersianDate(iso: unknown): string {
+    if (!iso) return '—';
+    try {
+      return new persianDate(new Date(String(iso))).format('YYYY-MM-DD');
+    } catch { return String(iso); }
+  }
+
   const columns: Column<Contract>[] = [
     { key: 'id', header: 'شناسه' },
     { key: 'contractNumber', header: 'شماره قرارداد' },
     { key: 'title', header: 'عنوان' },
-    { key: 'startDate', header: 'تاریخ شروع' },
-    { key: 'endDate', header: 'تاریخ پایان' },
+    { key: 'startDate', header: 'تاریخ شروع', render: (v) => formatPersianDate(v) },
+    { key: 'endDate', header: 'تاریخ پایان', render: (v) => formatPersianDate(v) },
     {
       key: 'isActive',
       header: 'فعال',

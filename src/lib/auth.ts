@@ -41,8 +41,8 @@ export function getStoredTokens(): AuthTokens | null {
 }
 
 export function storeTokens(tokens: AuthTokens): void {
-  const refreshMs = new Date(tokens.refresh_token_expires_at).getTime() - Date.now();
-  setCookie(ACCESS_TOKEN_KEY, tokens.access_token, tokens.expires_in * 1000);
+  const refreshMs = tokens.refresh_token_expires_at ? new Date(tokens.refresh_token_expires_at).getTime() - Date.now() : 0;
+  setCookie(ACCESS_TOKEN_KEY, tokens.access_token, (tokens.expires_in ?? 900) * 1000);
   setCookie(REFRESH_TOKEN_KEY, tokens.refresh_token, refreshMs);
   setCookie(SESSION_ID_KEY, String(tokens.session_id), refreshMs);
   apiClient.setToken(tokens.access_token);

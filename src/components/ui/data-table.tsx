@@ -18,7 +18,7 @@ interface DataTableProps<T> {
   ignorePaging?: boolean;
 }
 
-export function DataTable<T extends Record<string, unknown>>({
+export function DataTable<T>({
   columns,
   apiEndpoint,
   title,
@@ -146,15 +146,18 @@ export function DataTable<T extends Record<string, unknown>>({
                     key={i}
                     className="border-b border-border transition-colors last:border-0 hover:bg-surface-secondary/50"
                   >
-                    {columns.map((col) => (
-                      <td key={col.key} className="whitespace-nowrap px-4 py-3 text-zinc-900 dark:text-zinc-100">
-                        {col.render
-                          ? col.render(row[col.key], row)
-                          : row[col.key] != null
-                            ? String(row[col.key])
-                            : '—'}
-                      </td>
-                    ))}
+                    {columns.map((col) => {
+                      const cellValue = (row as Record<string, unknown>)[col.key];
+                      return (
+                        <td key={col.key} className="whitespace-nowrap px-4 py-3 text-zinc-900 dark:text-zinc-100">
+                          {col.render
+                            ? col.render(cellValue, row)
+                            : cellValue != null
+                              ? String(cellValue)
+                              : '—'}
+                        </td>
+                      );
+                    })}
                   </tr>
                 ))}
               </tbody>

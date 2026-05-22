@@ -36,7 +36,8 @@ interface CrudModalProps {
   mode: 'create' | 'edit';
   title: string;
   fields: FieldDef[];
-  initialValues?: Record<string, unknown>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  initialValues?: Record<string, any>;
   loading?: boolean;
   onSave: (values: Record<string, unknown>) => void;
   onClose: () => void;
@@ -89,7 +90,7 @@ export function CrudModal({
       );
       setErrors({});
     }
-  }, [open, mode, fields, initialValues]);
+  }, [open, mode, fields]);
 
   useEffect(() => {
     const el = dialogRef.current;
@@ -165,7 +166,7 @@ export function CrudModal({
             onChange={(e) =>
               setValue(field.name, field.options?.[0]?.value === 'number' ? Number(e.target.value) : e.target.value)
             }
-            options={field.options ?? []}
+            options={(field.options ?? []).map((o) => ({ value: String(o.value), label: o.label }))}
             error={error}
             placeholder={field.placeholder || `انتخاب ${field.label}...`}
           />

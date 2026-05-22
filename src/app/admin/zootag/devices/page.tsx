@@ -78,7 +78,7 @@ export default function DevicesPage() {
   const [selectedDeviceTypeId, setSelectedDeviceTypeId] = useState<number | null>(null);
   const [selectedDeviceTypeName, setSelectedDeviceTypeName] = useState('');
   const [selectedDeviceStatusId, setSelectedDeviceStatusId] = useState<number | null>(null);
-  const [_selectedDeviceStatusName, setSelectedDeviceStatusName] = useState('');
+  const [selectedDeviceStatusName, setSelectedDeviceStatusName] = useState('');
   const [deviceStatusOptions, setDeviceStatusOptions] = useState<{ value: number; label: string }[]>([]);
   const [lookupConfig, setLookupConfig] = useState<LookupConfig | null>(null);
   const [lookupOpen, setLookupOpen] = useState(false);
@@ -165,18 +165,20 @@ export default function DevicesPage() {
     field: FieldDef,
     value: unknown,
     onChange: (v: unknown) => void,
-    _error?: string,
+    error?: string,
   ) => {
     if (field.name === 'companyId') {
       return (
         <div key={field.name}>
           <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            {field.label}
+            {field.label} {field.required && <span className="text-danger">*</span>}
           </label>
           <div className="flex items-center gap-2">
             <input
               type="text"
-              className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100"
+              className={`flex-1 rounded-lg border bg-surface px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 ${
+                error ? 'border-danger' : 'border-border'
+              }`}
               value={selectedCompanyName}
               disabled
               placeholder="شرکت را انتخاب کنید"
@@ -206,6 +208,7 @@ export default function DevicesPage() {
               </button>
             )}
           </div>
+          {error && <p className="mt-1 text-xs text-danger">{error}</p>}
         </div>
       );
     }
@@ -214,12 +217,14 @@ export default function DevicesPage() {
       return (
         <div key={field.name}>
           <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            {field.label}
+            {field.label} {field.required && <span className="text-danger">*</span>}
           </label>
           <div className="flex items-center gap-2">
             <input
               type="text"
-              className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100"
+              className={`flex-1 rounded-lg border bg-surface px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 ${
+                error ? 'border-danger' : 'border-border'
+              }`}
               value={selectedDeviceTypeName}
               disabled
               placeholder="نوع دستگاه را انتخاب کنید"
@@ -249,6 +254,7 @@ export default function DevicesPage() {
               </button>
             )}
           </div>
+          {error && <p className="mt-1 text-xs text-danger">{error}</p>}
         </div>
       );
     }
@@ -257,7 +263,7 @@ export default function DevicesPage() {
       return (
         <div key={field.name}>
           <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            {field.label}
+            {field.label} {field.required && <span className="text-danger">*</span>}
           </label>
           <select
             value={selectedDeviceStatusId ?? ''}
@@ -268,7 +274,9 @@ export default function DevicesPage() {
               setSelectedDeviceStatusName(option?.label ?? '');
               onChange(id);
             }}
-            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100"
+            className={`w-full rounded-lg border bg-surface px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 ${
+              error ? 'border-danger' : 'border-border'
+            }`}
           >
             <option value="">انتخاب وضعیت...</option>
             {deviceStatusOptions.map((opt) => (
@@ -277,6 +285,7 @@ export default function DevicesPage() {
               </option>
             ))}
           </select>
+          {error && <p className="mt-1 text-xs text-danger">{error}</p>}
         </div>
       );
     }
