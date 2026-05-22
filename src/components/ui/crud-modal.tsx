@@ -4,6 +4,13 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Input } from './input';
 import { Textarea } from './textarea';
 import { Select } from './select';
+import { PersianDatePicker } from './persian-date-picker';
+
+function toDate(value: unknown): Date | null {
+  if (value == null || value === '') return null;
+  const d = new Date(String(value));
+  return isNaN(d.getTime()) ? null : d;
+}
 
 export interface SelectOption {
   value: string | number;
@@ -179,12 +186,11 @@ export function CrudModal({
 
       case 'date':
         return (
-          <Input
+          <PersianDatePicker
             key={field.name}
             label={field.label}
-            type="date"
-            value={String(value ?? '')}
-            onChange={(e) => setValue(field.name, e.target.value)}
+            value={toDate(value)}
+            onChange={(v) => setValue(field.name, v.isoDate)}
             error={error}
             placeholder={field.placeholder}
           />

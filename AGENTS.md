@@ -492,6 +492,8 @@ interface FieldDef {
 }
 ```
 
+**Important**: `type: 'date'` fields render the `PersianDatePicker` component (Jalali calendar), NOT a native `<input type="date">`. The value stored is the `isoDate` string from the picker (e.g., `"2026-01-15T00:00:00.000Z"`). The `initialValues` are converted from ISO string to `Date` object via a `toDate()` helper before being passed to the picker.
+
 ### FK Reference Handling
 
 Two strategies for FK fields in create/edit forms:
