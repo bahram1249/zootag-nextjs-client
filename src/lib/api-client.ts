@@ -31,9 +31,8 @@ interface RequestConfig {
 }
 
 interface QueuedRequest {
-  resolve: (value: any) => void;
-  reject: (reason?: any) => void;
-  config: RequestConfig;
+  resolve: (value: unknown) => void;
+  config?: RequestConfig;
 }
 
 function buildUrl(
@@ -122,7 +121,6 @@ class ApiClient {
   private token: string | null = null;
   private refreshPromise: Promise<boolean> | null = null;
   private pendingRequests: QueuedRequest[] = [];
-  private isRefreshing: boolean = false;
   private readonly maxRetries: number = 1;
 
   constructor(baseUrl: string) {
@@ -160,39 +158,43 @@ class ApiClient {
   private async refreshAccessToken(): Promise<boolean> {
     // If refresh is already in progress, queue this request
     if (this.refreshPromise) {
-      return new Promise((resolve, reject) => {
-        this.pendingRequests.push({
-          resolve,
-          reject,
-          config: null as any,
-        });
+      return new Promise<boolean>((resolve) => {
+        this.pendingRequests.push({ resolve });
       });
     }
 
-    this.refreshPromise = this.doRefresh();
+    this.refreshPromise = this.doRefresh().catch(() => false);
 
     try {
       const result = await this.refreshPromise;
 
-      // Process queued requests
-      if (result) {
-        for (const queued of this.pendingRequests) {
-          if (queued.config) {
-            this.retryRequest(queued.config)
-              .then(queued.resolve)
-              .catch(queued.reject);
-          } else {
-            queued.resolve(result);
-          }
-        }
-      } else {
-        for (const queued of this.pendingRequests) {
-          queued.reject(new Error("Token refresh failed"));
+      // Process queued requests — resolve all with the same boolean result
+      for (const queued of this.pendingRequests) {
+        queued.resolve(result);
+      }
+      this.pendingRequests = [];
+
+      if (!result) {
+        clearAuthCookies();
+        this.token = null;
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("auth:expired"));
         }
       }
 
-      this.pendingRequests = [];
       return result;
+    } catch {
+      // Unexpected error in refresh flow — treat as failure
+      for (const queued of this.pendingRequests) {
+        queued.resolve(false);
+      }
+      this.pendingRequests = [];
+      clearAuthCookies();
+      this.token = null;
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("auth:expired"));
+      }
+      return false;
     } finally {
       this.refreshPromise = null;
     }
@@ -211,14 +213,6 @@ class ApiClient {
       console.error("No refresh token or session ID available for refresh");
       return false;
     }
-
-    // Prevent multiple concurrent refresh attempts
-    if (this.isRefreshing) {
-      console.log("Refresh already in progress, waiting...");
-      return false;
-    }
-
-    this.isRefreshing = true;
 
     try {
       const requestBody = {
@@ -248,17 +242,6 @@ class ApiClient {
           response.status,
           errorText,
         );
-
-        // Clear auth on 401/403 (invalid refresh token)
-        if (response.status === 401 || response.status === 403) {
-          console.error("Refresh token invalid or expired, clearing auth");
-          clearAuthCookies();
-          this.token = null;
-
-          if (typeof window !== "undefined") {
-            window.dispatchEvent(new CustomEvent("auth:expired"));
-          }
-        }
         return false;
       }
 
@@ -282,19 +265,15 @@ class ApiClient {
       // Validate required fields
       if (!result.access_token) {
         console.error("No access_token in refresh response:", result);
-        clearAuthCookies();
-        this.token = null;
         return false;
       }
 
       if (!result.refresh_token) {
         console.error("No refresh_token in refresh response:", result);
-        clearAuthCookies();
-        this.token = null;
         return false;
       }
 
-      // Validate refresh token expiry
+      // Calculate refresh token expiry
       let refreshMs: number;
       if (result.refresh_token_expires_at) {
         const refreshExpiry = new Date(
@@ -305,20 +284,17 @@ class ApiClient {
             "Invalid refresh_token_expires_at format:",
             result.refresh_token_expires_at,
           );
-          refreshMs = 30 * 24 * 60 * 60 * 1000; // Default to 30 days
+          refreshMs = 30 * 24 * 60 * 60 * 1000;
         } else {
           refreshMs = refreshExpiry - Date.now();
         }
       } else {
-        // Default to 30 days if not provided
         refreshMs = 30 * 24 * 60 * 60 * 1000;
       }
 
-      // Don't set cookies if refresh token is already expired
+      // Don't accept an already-expired refresh token
       if (refreshMs <= 0) {
         console.error("Received already expired refresh token");
-        clearAuthCookies();
-        this.token = null;
         return false;
       }
 
@@ -327,7 +303,7 @@ class ApiClient {
       console.log("Token refreshed successfully, new token set");
 
       // Update cookies
-      const accessTokenMs = (result.expires_in || 3600) * 1000; // Default 1 hour
+      const accessTokenMs = (result.expires_in || 3600) * 1000;
       setCookie("access_token", result.access_token, accessTokenMs);
       setCookie("refresh_token", result.refresh_token, refreshMs);
 
@@ -338,8 +314,6 @@ class ApiClient {
       // Signal other tabs that token was refreshed
       if (typeof window !== "undefined") {
         localStorage.setItem("auth_last_refresh", Date.now().toString());
-
-        // Dispatch a custom event for the current window
         window.dispatchEvent(
           new CustomEvent("auth:refreshed", {
             detail: {
@@ -353,21 +327,8 @@ class ApiClient {
       return true;
     } catch (error) {
       console.error("Refresh token request exception:", error);
-      clearAuthCookies();
-      this.token = null;
-
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("auth:expired"));
-      }
-
       return false;
-    } finally {
-      this.isRefreshing = false;
     }
-  }
-
-  private async retryRequest(config: RequestConfig): Promise<any> {
-    return this.executeRequest(config);
   }
 
   private async executeRequest<T>(
@@ -469,13 +430,6 @@ class ApiClient {
           return this.request<T>(config, retryCount + 1);
         } else {
           console.error(`Token refresh failed for ${config.path}`);
-          clearAuthCookies();
-          this.token = null;
-
-          if (typeof window !== "undefined") {
-            window.dispatchEvent(new CustomEvent("auth:expired"));
-          }
-
           throw error;
         }
       }
