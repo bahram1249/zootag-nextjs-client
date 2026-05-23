@@ -4,6 +4,7 @@ import { useState, useEffect, type ReactNode } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { fetchMenus } from '@/lib/menus';
+import { ThemeToggle } from '@/components/theme/theme-toggle';
 import type { MenuNode } from '@/lib/auth-types';
 
 function toFrontendUrl(backendUrl: string | null): string {
@@ -86,6 +87,7 @@ function Sidebar({ menus }: { menus: MenuNode[] }) {
         <div className="flex-1 overflow-hidden">
           <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">{name}</p>
         </div>
+        <ThemeToggle />
         <button
           onClick={logout}
           className="rounded-lg p-1.5 text-muted transition-colors hover:bg-surface-secondary"

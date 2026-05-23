@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme inline {
   --color-primary: var(--color-indigo-600);
   --color-primary-light: var(--color-indigo-50);
@@ -23,35 +25,41 @@
   --radius-badge: 9999px;
 }
 
+.dark {
+  --color-primary: var(--color-indigo-400);
+  --color-primary-light: var(--color-indigo-950);
+  --color-primary-hover: var(--color-indigo-300);
+  --color-success: var(--color-emerald-400);
+  --color-success-light: var(--color-emerald-950);
+  --color-warning: var(--color-amber-400);
+  --color-warning-light: var(--color-amber-950);
+  --color-danger: var(--color-red-400);
+  --color-danger-light: var(--color-red-950);
+  --color-info: var(--color-sky-400);
+  --color-info-light: var(--color-sky-950);
+  --color-surface: var(--color-zinc-900);
+  --color-surface-secondary: var(--color-zinc-800);
+  --color-border: var(--color-zinc-700);
+  --color-border-hover: var(--color-zinc-600);
+  --color-muted: var(--color-zinc-400);
+  --color-muted-foreground: var(--color-zinc-300);
+}
+
+:root {
+  color-scheme: light;
+}
+
+:root.dark {
+  color-scheme: dark;
+}
+
 body {
   background: var(--color-zinc-50);
   color: var(--color-zinc-900);
   font-family: var(--font-sans, Tahoma, Arial, sans-serif);
 }
 
-@media (prefers-color-scheme: dark) {
-  @theme inline {
-    --color-primary: var(--color-indigo-400);
-    --color-primary-light: var(--color-indigo-950);
-    --color-primary-hover: var(--color-indigo-300);
-    --color-success: var(--color-emerald-400);
-    --color-success-light: var(--color-emerald-950);
-    --color-warning: var(--color-amber-400);
-    --color-warning-light: var(--color-amber-950);
-    --color-danger: var(--color-red-400);
-    --color-danger-light: var(--color-red-950);
-    --color-info: var(--color-sky-400);
-    --color-info-light: var(--color-sky-950);
-    --color-surface: var(--color-zinc-900);
-    --color-surface-secondary: var(--color-zinc-800);
-    --color-border: var(--color-zinc-700);
-    --color-border-hover: var(--color-zinc-600);
-    --color-muted: var(--color-zinc-400);
-    --color-muted-foreground: var(--color-zinc-300);
-  }
-
-  body {
-    background: var(--color-zinc-950);
-    color: var(--color-zinc-100);
-  }
+.dark body {
+  background: var(--color-zinc-950);
+  color: var(--color-zinc-100);
 }

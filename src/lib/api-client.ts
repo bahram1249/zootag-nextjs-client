@@ -31,7 +31,7 @@ interface RequestConfig {
 }
 
 interface QueuedRequest {
-  resolve: (value: unknown) => void;
+  resolve: (value: boolean) => void;
   config?: RequestConfig;
 }
 
@@ -302,8 +302,7 @@ class ApiClient {
       this.token = result.access_token;
       console.log("Token refreshed successfully, new token set");
 
-      // Update cookies
-      const accessTokenMs = (result.expires_in || 3600) * 1000;
+      const accessTokenMs = (result.expires_in || 900) * 1000;
       setCookie("access_token", result.access_token, accessTokenMs);
       setCookie("refresh_token", result.refresh_token, refreshMs);
 
@@ -445,9 +444,7 @@ const defaultBaseUrl =
 export const apiClient = new ApiClient(defaultBaseUrl);
 
 export function isAuthenticated(): boolean {
-  const token = getCookie("access_token");
-  const refreshToken = getCookie("refresh_token");
-  return !!(token && refreshToken);
+  return !!getCookie("refresh_token");
 }
 
 export function getSessionInfo(): {

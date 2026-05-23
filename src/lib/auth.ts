@@ -31,10 +31,10 @@ function removeCookie(name: string): void {
 
 export function getStoredTokens(): AuthTokens | null {
   if (typeof document === 'undefined') return null;
-  const access_token = getCookie(ACCESS_TOKEN_KEY);
   const refresh_token = getCookie(REFRESH_TOKEN_KEY);
   const session_id = getCookie(SESSION_ID_KEY);
-  if (access_token && refresh_token && session_id) {
+  if (refresh_token && session_id) {
+    const access_token = getCookie(ACCESS_TOKEN_KEY) || '';
     return { access_token, refresh_token, session_id: Number(session_id) };
   }
   return null;

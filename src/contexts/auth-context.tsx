@@ -41,7 +41,9 @@ async function fetchProfile() {
 function initState(): AuthState {
   const tokens = getStoredTokens();
   if (tokens) {
-    apiClient.setToken(tokens.access_token);
+    if (tokens.access_token) {
+      apiClient.setToken(tokens.access_token);
+    }
   }
   return {
     isAuthenticated: !!tokens,

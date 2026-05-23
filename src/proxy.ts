@@ -10,9 +10,9 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const accessToken = request.cookies.get('access_token')?.value;
+  const refreshToken = request.cookies.get('refresh_token')?.value;
 
-  if (!accessToken && !pathname.startsWith('/_next') && !pathname.startsWith('/api/')) {
+  if (!refreshToken && !pathname.startsWith('/_next') && !pathname.startsWith('/api/')) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
