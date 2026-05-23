@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import persianDate from 'persian-date';
 
-import { DataTable, CrudModal, ConfirmDialog, LookupDialog } from '@/components/ui';
+import { DataTable, CrudModal, ConfirmDialog, LookupDialog, Badge } from '@/components/ui';
 import type { Column, FieldDef, LookupConfig } from '@/components/ui';
 import { apiClient, ApiError } from '@/lib/api-client';
 
@@ -13,6 +14,8 @@ interface Device {
   macAddress?: string;
   companyId: number;
   deviceTypeId: number;
+  contractPeriodId: number;
+  contractPeriodDevicePriceId: number;
   purchaseDate?: string;
   warrantyEndDate: string;
   deviceStatusId: number;
@@ -20,37 +23,30 @@ interface Device {
   company?: { id: number; companyName: string };
   deviceType?: { id: number; typeName: string; modelCode: string };
   deviceStatus?: { id: number; name: string };
+  contractPeriod?: { id: number; periodName: string };
+  contractPeriodDevicePrice?: { id: number; purchasePrice: number };
 }
 
-const companyLookupConfig: LookupConfig = {
-  endpoint: '/v1/api/zootag/admin/companies',
-  labelKey: 'companyName',
+const contractPeriodDevicePriceLookupConfig: LookupConfig = {
+  endpoint: '/v1/api/zootag/admin/contractPeriodDevicePrices/available',
+  labelKey: 'displayName',
   valueKey: 'id',
-  title: 'شرکت',
+  title: 'قیمت دوره قرارداد',
   columns: [
     { key: 'id', header: 'شناسه' },
-    { key: 'companyName', header: 'نام شرکت' },
+    { key: 'contractPeriod', header: 'دوره', render: (v: unknown) => (v as { periodName?: string })?.periodName ?? '' },
+    { key: 'deviceType', header: 'نوع دستگاه', render: (v: unknown) => {
+      const dt = v as { typeName?: string; modelCode?: string } | undefined;
+      return dt ? `${dt.typeName ?? ''} (${dt.modelCode ?? ''})` : '';
+    }},
+    { key: 'companyDisplay', header: 'شرکت', render: (_v: unknown, row: unknown) => {
+      const r = row as { contractPeriod?: { contract?: { company?: { companyName?: string } } } };
+      return r?.contractPeriod?.contract?.company?.companyName ?? '';
+    }},
+    { key: 'purchasePrice', header: 'قیمت خرید' },
+    { key: 'maximumQuantity', header: 'حداکثر تعداد' },
   ],
-  formFields: [
-    { name: 'companyName', label: 'نام شرکت', type: 'string', required: true },
-    { name: 'legalName', label: 'نام حقوقی', type: 'string', required: true },
-  ],
-};
-
-const deviceTypeLookupConfig: LookupConfig = {
-  endpoint: '/v1/api/zootag/admin/deviceTypes',
-  labelKey: 'typeName',
-  valueKey: 'id',
-  title: 'نوع دستگاه',
-  columns: [
-    { key: 'id', header: 'شناسه' },
-    { key: 'typeName', header: 'نام نوع' },
-    { key: 'modelCode', header: 'کد مدل' },
-  ],
-  formFields: [
-    { name: 'typeName', label: 'نام نوع', type: 'string', required: true },
-    { name: 'modelCode', label: 'کد مدل', type: 'string', required: true },
-  ],
+  formFields: [],
 };
 
 const modalFields: FieldDef[] = [
@@ -59,8 +55,7 @@ const modalFields: FieldDef[] = [
   { name: 'macAddress', label: 'MAC Address', type: 'string', placeholder: 'MAC Address (اختیاری)' },
   { name: 'purchaseDate', label: 'تاریخ خرید', type: 'date' },
   { name: 'warrantyEndDate', label: 'تاریخ پایان گارانتی', type: 'date', required: true },
-  { name: 'companyId', label: 'شرکت', type: 'string', required: true },
-  { name: 'deviceTypeId', label: 'نوع دستگاه', type: 'string', required: true },
+  { name: 'contractPeriodDevicePriceId', label: 'قیمت دوره قرارداد', type: 'string', required: true },
   { name: 'deviceStatusId', label: 'وضعیت دستگاه', type: 'string', required: true },
 ];
 
@@ -73,14 +68,11 @@ export default function DevicesPage() {
   const [deleting, setDeleting] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null);
-  const [selectedCompanyName, setSelectedCompanyName] = useState('');
-  const [selectedDeviceTypeId, setSelectedDeviceTypeId] = useState<number | null>(null);
-  const [selectedDeviceTypeName, setSelectedDeviceTypeName] = useState('');
+  const [selectedPriceId, setSelectedPriceId] = useState<number | null>(null);
+  const [selectedPriceDisplay, setSelectedPriceDisplay] = useState('');
   const [selectedDeviceStatusId, setSelectedDeviceStatusId] = useState<number | null>(null);
   const [selectedDeviceStatusName, setSelectedDeviceStatusName] = useState('');
   const [deviceStatusOptions, setDeviceStatusOptions] = useState<{ value: number; label: string }[]>([]);
-  const [lookupConfig, setLookupConfig] = useState<LookupConfig | null>(null);
   const [lookupOpen, setLookupOpen] = useState(false);
 
   const pendingOnChangeRef = useRef<((v: unknown) => void) | null>(null);
@@ -98,10 +90,8 @@ export default function DevicesPage() {
   }, [modalOpen]);
 
   const handleCreate = () => {
-    setSelectedCompanyId(null);
-    setSelectedCompanyName('');
-    setSelectedDeviceTypeId(null);
-    setSelectedDeviceTypeName('');
+    setSelectedPriceId(null);
+    setSelectedPriceDisplay('');
     setSelectedDeviceStatusId(null);
     setSelectedDeviceStatusName('');
     setDeviceStatusOptions([]);
@@ -111,10 +101,9 @@ export default function DevicesPage() {
   };
 
   const handleEdit = (row: Device) => {
-    setSelectedCompanyId(row.companyId);
-    setSelectedCompanyName(row.company?.companyName ?? '');
-    setSelectedDeviceTypeId(row.deviceTypeId);
-    setSelectedDeviceTypeName(row.deviceType?.typeName ?? '');
+    const contractDesc = `${row.contractPeriod?.periodName ?? ''} - ${row.deviceType?.typeName ?? ''} (${row.deviceType?.modelCode ?? ''})`;
+    setSelectedPriceId(row.contractPeriodDevicePriceId);
+    setSelectedPriceDisplay(contractDesc);
     setSelectedDeviceStatusId(row.deviceStatusId);
     setSelectedDeviceStatusName(row.deviceStatus?.name ?? '');
     setModalMode('edit');
@@ -127,8 +116,7 @@ export default function DevicesPage() {
     try {
       const payload: Record<string, unknown> = {
         ...values,
-        companyId: selectedCompanyId,
-        deviceTypeId: selectedDeviceTypeId,
+        contractPeriodDevicePriceId: selectedPriceId,
         deviceStatusId: selectedDeviceStatusId,
       };
       if (modalMode === 'create') {
@@ -167,7 +155,7 @@ export default function DevicesPage() {
     onChange: (v: unknown) => void,
     error?: string,
   ) => {
-    if (field.name === 'companyId') {
+    if (field.name === 'contractPeriodDevicePriceId') {
       return (
         <div key={field.name}>
           <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
@@ -179,73 +167,27 @@ export default function DevicesPage() {
               className={`flex-1 rounded-lg border bg-surface px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 ${
                 error ? 'border-danger' : 'border-border'
               }`}
-              value={selectedCompanyName}
+              value={selectedPriceDisplay}
               disabled
-              placeholder="شرکت را انتخاب کنید"
+              placeholder="قیمت دوره قرارداد را انتخاب کنید"
             />
             <button
               type="button"
+              disabled={modalMode === 'edit'}
               onClick={() => {
-                setLookupConfig(companyLookupConfig);
                 pendingOnChangeRef.current = onChange;
                 setLookupOpen(true);
               }}
-              className="flex h-9 items-center rounded-lg bg-primary px-3 text-sm font-medium text-white transition-colors hover:bg-primary/90"
+              className="flex h-9 items-center rounded-lg bg-primary px-3 text-sm font-medium text-white transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               انتخاب
             </button>
-            {selectedCompanyId != null && (
+            {selectedPriceId != null && modalMode === 'create' && (
               <button
                 type="button"
                 onClick={() => {
-                  setSelectedCompanyId(null);
-                  setSelectedCompanyName('');
-                  onChange(null);
-                }}
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-secondary"
-              >
-                ×
-              </button>
-            )}
-          </div>
-          {error && <p className="mt-1 text-xs text-danger">{error}</p>}
-        </div>
-      );
-    }
-
-    if (field.name === 'deviceTypeId') {
-      return (
-        <div key={field.name}>
-          <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            {field.label} {field.required && <span className="text-danger">*</span>}
-          </label>
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              className={`flex-1 rounded-lg border bg-surface px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 ${
-                error ? 'border-danger' : 'border-border'
-              }`}
-              value={selectedDeviceTypeName}
-              disabled
-              placeholder="نوع دستگاه را انتخاب کنید"
-            />
-            <button
-              type="button"
-              onClick={() => {
-                setLookupConfig(deviceTypeLookupConfig);
-                pendingOnChangeRef.current = onChange;
-                setLookupOpen(true);
-              }}
-              className="flex h-9 items-center rounded-lg bg-primary px-3 text-sm font-medium text-white transition-colors hover:bg-primary/90"
-            >
-              انتخاب
-            </button>
-            {selectedDeviceTypeId != null && (
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedDeviceTypeId(null);
-                  setSelectedDeviceTypeName('');
+                  setSelectedPriceId(null);
+                  setSelectedPriceDisplay('');
                   onChange(null);
                 }}
                 className="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-secondary"
@@ -293,11 +235,57 @@ export default function DevicesPage() {
     return null;
   };
 
+  function formatPersianDate(iso: unknown): string {
+    if (!iso) return '—';
+    try {
+      return new persianDate(new Date(String(iso))).format('YYYY-MM-DD');
+    } catch { return String(iso); }
+  }
+
   const columns: Column<Device>[] = [
     { key: 'id', header: 'شناسه' },
     { key: 'serialNumber', header: 'سریال نمبر' },
     { key: 'imei', header: 'IMEI' },
     { key: 'macAddress', header: 'MAC Address' },
+    {
+      key: 'company',
+      header: 'شرکت',
+      render: (v) => (v as { companyName?: string } | undefined)?.companyName ?? '',
+    },
+    {
+      key: 'deviceType',
+      header: 'نوع دستگاه',
+      render: (v) => {
+        const dt = v as { typeName?: string; modelCode?: string } | undefined;
+        return dt ? `${dt.typeName ?? ''} (${dt.modelCode ?? ''})` : '';
+      },
+    },
+    {
+      key: 'contractPeriod',
+      header: 'دوره قرارداد',
+      render: (v) => (v as { periodName?: string } | undefined)?.periodName ?? '',
+    },
+    {
+      key: 'deviceStatus',
+      header: 'وضعیت',
+      render: (v, row) => {
+        const status = v as { id?: number; name?: string } | undefined;
+        const id = (row as Device).deviceStatusId;
+        const label = status?.name ?? '';
+        const map: Record<number, { variant: 'success' | 'info' | 'primary' | 'danger' | 'warning'; icon: React.ReactNode }> = {
+          1: { variant: 'success', icon: <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg> },
+          2: { variant: 'info', icon: <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg> },
+          3: { variant: 'primary', icon: <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> },
+          4: { variant: 'danger', icon: <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg> },
+          5: { variant: 'warning', icon: <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-4-4" /></svg> },
+        };
+        const cfg = map[id];
+        return cfg ? <Badge variant={cfg.variant} icon={cfg.icon} size="sm">{label}</Badge> : <Badge size="sm">{label}</Badge>;
+      },
+    },
+    { key: 'purchaseDate', header: 'تاریخ خرید', render: (v) => formatPersianDate(v) },
+    { key: 'warrantyEndDate', header: 'پایان گارانتی', render: (v) => formatPersianDate(v) },
+    { key: 'purchasePrice', header: 'قیمت خرید' },
     {
       key: 'isActive',
       header: 'فعال',
@@ -363,33 +351,24 @@ export default function DevicesPage() {
         onClose={() => setModalOpen(false)}
         renderCustomField={renderCustomField}
       />
-      {lookupConfig && (
-        <LookupDialog
-          open={lookupOpen}
-          config={lookupConfig}
-          selectedValue={
-            lookupConfig.title === 'شرکت' ? selectedCompanyId : selectedDeviceTypeId
-          }
-          onSelect={(value, label) => {
-            if (pendingOnChangeRef.current) {
-              pendingOnChangeRef.current(value);
-              pendingOnChangeRef.current = null;
-            }
-            if (lookupConfig.title === 'شرکت') {
-              setSelectedCompanyId(value as number);
-              setSelectedCompanyName(label);
-            } else if (lookupConfig.title === 'نوع دستگاه') {
-              setSelectedDeviceTypeId(value as number);
-              setSelectedDeviceTypeName(label);
-            }
-            setLookupOpen(false);
-          }}
-          onClose={() => {
+      <LookupDialog
+        open={lookupOpen}
+        config={contractPeriodDevicePriceLookupConfig}
+        selectedValue={selectedPriceId}
+        onSelect={(value, label) => {
+          if (pendingOnChangeRef.current) {
+            pendingOnChangeRef.current(value);
             pendingOnChangeRef.current = null;
-            setLookupOpen(false);
-          }}
-        />
-      )}
+          }
+          setSelectedPriceId(value as number);
+          setSelectedPriceDisplay(label);
+          setLookupOpen(false);
+        }}
+        onClose={() => {
+          pendingOnChangeRef.current = null;
+          setLookupOpen(false);
+        }}
+      />
       <ConfirmDialog
         open={!!deleteTarget}
         title="تأیید حذف"
