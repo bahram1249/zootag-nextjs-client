@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, type ReactNode } from 'react';
+import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { fetchMenus } from '@/lib/menus';
@@ -24,12 +24,30 @@ function toFrontendUrl(backendUrl: string | null): string {
   return backendUrl;
 }
 
+function hasActiveDescendant(node: MenuNode, pathname: string): boolean {
+  if (!node.subMenus) return false;
+  for (const child of node.subMenus) {
+    const childHref = toFrontendUrl(child.url);
+    if (pathname === childHref || pathname.startsWith(childHref + '/')) return true;
+    if (hasActiveDescendant(child, pathname)) return true;
+  }
+  return false;
+}
+
 function MenuItem({ node, depth }: { node: MenuNode; depth: number }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const prevPathname = useRef('');
   const hasChildren = node.subMenus && node.subMenus.length > 0;
   const href = toFrontendUrl(node.url);
   const isActive = pathname === href || pathname.startsWith(href + '/');
+
+  if (pathname !== prevPathname.current) {
+    prevPathname.current = pathname;
+    if (hasChildren && (pathname.startsWith(href + '/') || pathname === href || hasActiveDescendant(node, pathname))) {
+      setOpen(true);
+    }
+  }
 
   return (
     <div>
