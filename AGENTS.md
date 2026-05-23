@@ -621,6 +621,18 @@ if (field.name === 'deviceStatusId') {
 | Device Types | `/v1/api/zootag/admin/deviceTypes` | Full | manufacturerId (lookup) |
 | Contracts | `/v1/api/zootag/admin/contracts` | Full | companyId (lookup), currencyId (lookup), contractStatusId (select) |
 | Devices | `/v1/api/zootag/admin/devices` | Full | companyId (lookup), deviceTypeId (lookup), deviceStatusId (select) |
+| Marketers | `/v1/api/zootag/admin/marketers` | Full | — |
+| Device Sale Prices | `/v1/api/zootag/admin/deviceSalePrices` | Create only (no update/delete) | deviceTypeId (lookup), currencyId (lookup) |
+| Device Sales | `/v1/api/zootag/admin/deviceSales` | Create only (immutable snapshots) | deviceId (lookup), marketerId (lookup), saleCurrencyId (lookup) |
+| Commission Settlements | `/v1/api/zootag/admin/commissionSettlements` | Full | marketerId (lookup), deviceSaleId (lookup) |
+
+### Device Entity Changes
+
+The `ZT_Device` entity has been restructured:
+- **Removed**: `sellingPrice`, `sellingCurrencyId`, `sellingPriceIRR` (moved to DeviceSalePrices)
+- **Added**: `inventoryStatus` (ENUM: `available`/`reserved`/`sold`/`returned`/`damaged`)
+- **Added**: `saleId` (nullable FK to DeviceSales)
+- Purchase price fields remain immutable after creation
 
 ### Re-fetch After CRUD
 

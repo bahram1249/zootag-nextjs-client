@@ -26,6 +26,10 @@ interface Device {
   contractPeriodDevicePrice?: { id: number; purchasePrice: number };
   currencyId: number;
   currency?: { id: number; code: string; name: string; symbol: string };
+  inventoryStatusId?: number;
+  inventoryStatus?: { id: number; name: string };
+  saleId?: number;
+  sale?: { id: number; salePrice: number };
 }
 
 const contractPeriodDevicePriceLookupConfig: LookupConfig = {
@@ -274,6 +278,43 @@ export default function DevicesPage() {
         };
         const cfg = map[id];
         return cfg ? <Badge variant={cfg.variant} icon={cfg.icon} size="sm">{label}</Badge> : <Badge size="sm">{label}</Badge>;
+      },
+    },
+    {
+      key: 'inventoryStatus',
+      header: 'وضعیت انبار',
+      render: (v, row) => {
+        const inv = v as { id?: number; name?: string } | undefined;
+        const r = row as Device;
+        const id = r.inventoryStatusId;
+        const label = inv?.name ?? '';
+        const map: Record<number, { variant: 'success' | 'info' | 'primary' | 'warning' | 'danger'; icon: React.ReactNode }> = {
+          1: { variant: 'success', icon: <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg> },
+          2: { variant: 'info', icon: <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg> },
+          3: { variant: 'primary', icon: <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> },
+          4: { variant: 'warning', icon: <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg> },
+          5: { variant: 'danger', icon: <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-4-4" /></svg> },
+        };
+        const cfg = map[id ?? 0];
+        return cfg ? <Badge variant={cfg.variant} icon={cfg.icon} size="sm">{label}</Badge> : <Badge size="sm">{label}</Badge>;
+      },
+    },
+    {
+      key: 'sale',
+      header: 'فروش',
+      render: (v, row) => {
+        const sale = v as { id?: number; salePrice?: number } | undefined;
+        const r = row as Device;
+        if (!r.saleId) return <span className="text-muted">—</span>;
+        return (
+          <Badge variant="primary" size="sm" icon={
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          }>
+            {sale ? `${sale.id} (${formatPrice(sale.salePrice)})` : `#${r.saleId}`}
+          </Badge>
+        );
       },
     },
     { key: 'purchaseDate', header: 'تاریخ خرید', render: (v) => formatPersianDate(v) },
