@@ -1,11 +1,10 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import persianDate from 'persian-date';
-
 import { DataTable, CrudModal, ConfirmDialog, LookupDialog } from '@/components/ui';
 import type { Column, FieldDef, LookupConfig } from '@/components/ui';
 import { apiClient, ApiError } from '@/lib/api-client';
+import { formatPersianDate } from '@/lib/format';
 
 interface Contract {
   id: number;
@@ -295,13 +294,6 @@ export default function ContractsPage() {
 
     return null;
   };
-
-  function formatPersianDate(iso: unknown): string {
-    if (!iso) return '—';
-    try {
-      return new persianDate(new Date(String(iso))).format('YYYY-MM-DD');
-    } catch { return String(iso); }
-  }
 
   const columns: Column<Contract>[] = [
     { key: 'id', header: 'شناسه' },

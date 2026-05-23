@@ -5,6 +5,7 @@ import { Input } from './input';
 import { Textarea } from './textarea';
 import { Select } from './select';
 import { PersianDatePicker } from './persian-date-picker';
+import { PriceInput } from './price-input';
 
 function toDate(value: unknown): Date | null {
   if (value == null || value === '') return null;
@@ -20,7 +21,7 @@ export interface SelectOption {
 export interface FieldDef {
   name: string;
   label: string;
-  type: 'string' | 'number' | 'boolean' | 'select' | 'textarea' | 'date';
+  type: 'string' | 'number' | 'boolean' | 'select' | 'textarea' | 'date' | 'price';
   required?: boolean;
   placeholder?: string;
   options?: SelectOption[];
@@ -180,6 +181,18 @@ export function CrudModal({
             type="number"
             value={String(value ?? '')}
             onChange={(e) => setValue(field.name, e.target.value === '' ? '' : Number(e.target.value))}
+            error={error}
+            placeholder={field.placeholder}
+          />
+        );
+
+      case 'price':
+        return (
+          <PriceInput
+            key={field.name}
+            label={field.label}
+            value={value as number | null | undefined}
+            onChange={(v) => setValue(field.name, v)}
             error={error}
             placeholder={field.placeholder}
           />

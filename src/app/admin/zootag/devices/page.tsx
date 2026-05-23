@@ -1,11 +1,10 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import persianDate from 'persian-date';
-
 import { DataTable, CrudModal, ConfirmDialog, LookupDialog, Badge } from '@/components/ui';
 import type { Column, FieldDef, LookupConfig } from '@/components/ui';
 import { apiClient, ApiError } from '@/lib/api-client';
+import { formatPrice, formatPersianDate } from '@/lib/format';
 
 interface Device {
   id: number;
@@ -25,6 +24,8 @@ interface Device {
   deviceStatus?: { id: number; name: string };
   contractPeriod?: { id: number; periodName: string };
   contractPeriodDevicePrice?: { id: number; purchasePrice: number };
+  currencyId: number;
+  currency?: { id: number; code: string; name: string; symbol: string };
 }
 
 const contractPeriodDevicePriceLookupConfig: LookupConfig = {
@@ -43,8 +44,8 @@ const contractPeriodDevicePriceLookupConfig: LookupConfig = {
       const r = row as { contractPeriod?: { contract?: { company?: { companyName?: string } } } };
       return r?.contractPeriod?.contract?.company?.companyName ?? '';
     }},
-    { key: 'purchasePrice', header: 'قیمت خرید' },
-    { key: 'maximumQuantity', header: 'حداکثر تعداد' },
+    { key: 'purchasePrice', header: 'قیمت خرید', render: (v) => formatPrice(v) },
+    { key: 'maximumQuantity', header: 'حداکثر تعداد', render: (v) => formatPrice(v) },
   ],
   formFields: [],
 };
@@ -74,7 +75,6 @@ export default function DevicesPage() {
   const [selectedDeviceStatusName, setSelectedDeviceStatusName] = useState('');
   const [deviceStatusOptions, setDeviceStatusOptions] = useState<{ value: number; label: string }[]>([]);
   const [lookupOpen, setLookupOpen] = useState(false);
-
   const pendingOnChangeRef = useRef<((v: unknown) => void) | null>(null);
 
   useEffect(() => {
@@ -235,13 +235,6 @@ export default function DevicesPage() {
     return null;
   };
 
-  function formatPersianDate(iso: unknown): string {
-    if (!iso) return '—';
-    try {
-      return new persianDate(new Date(String(iso))).format('YYYY-MM-DD');
-    } catch { return String(iso); }
-  }
-
   const columns: Column<Device>[] = [
     { key: 'id', header: 'شناسه' },
     { key: 'serialNumber', header: 'سریال نمبر' },
@@ -285,7 +278,7 @@ export default function DevicesPage() {
     },
     { key: 'purchaseDate', header: 'تاریخ خرید', render: (v) => formatPersianDate(v) },
     { key: 'warrantyEndDate', header: 'پایان گارانتی', render: (v) => formatPersianDate(v) },
-    { key: 'purchasePrice', header: 'قیمت خرید' },
+    { key: 'purchasePrice', header: 'قیمت خرید', render: (v) => formatPrice(v) },
     {
       key: 'isActive',
       header: 'فعال',
@@ -304,14 +297,17 @@ export default function DevicesPage() {
           <button
             onClick={() => handleEdit(row)}
             className="flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-secondary"
+            title="ویرایش"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
           </button>
+
           <button
             onClick={() => setDeleteTarget(row)}
             className="flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-secondary"
+            title="حذف"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -377,6 +373,7 @@ export default function DevicesPage() {
         onConfirm={handleDelete}
         onCancel={() => setDeleteTarget(null)}
       />
+
     </div>
   );
 }

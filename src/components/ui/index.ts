@@ -10,3 +10,4 @@ export type { FieldDef, SelectOption } from './crud-modal';
 export { ConfirmDialog } from './confirm-dialog';
 export { LookupDialog } from './lookup-dialog';
 export type { LookupConfig } from './lookup-dialog';
+export { PriceInput } from './price-input';

@@ -117,7 +117,7 @@ The API client uses this value as-is (no `/api` suffix appended). Include the fu
 A cohesive set of UI components with modern design. Import from `@/components/ui`:
 
 ```typescript
-import { Input, Textarea, Select, Badge, PersianDatePicker } from '@/components/ui';
+import { Input, Textarea, Select, Badge, PersianDatePicker, PriceInput } from '@/components/ui';
 ```
 
 ### Design Tokens
@@ -227,6 +227,64 @@ Usage:
 ```
 
 Props: `label`, `value` (Date), `onChange`, `error`, `helperText`, `placeholder`, `disabled`.
+
+### Price Formatting — `src/lib/format.ts`
+
+Two utility functions for price display and parsing:
+
+```typescript
+import { formatPrice, parsePrice, formatPersianDate } from '@/lib/format';
+
+formatPrice(1234567);       // "1,234,567"
+formatPrice(null);          // ""
+parsePrice('1,234,567');    // 1234567
+formatPersianDate('2026-05-23T00:00:00.000Z'); // "1405-03-02"
+```
+
+- `formatPrice(value: unknown): string` — converts a number (or numeric string) to locale-formatted string with comma separators. Returns `''` for null/undefined, and falls back to `String(value)` for non-numeric input.
+- `parsePrice(value: string): number` — strips all commas and converts to a JavaScript number.
+- `formatPersianDate(iso: unknown): string` — converts an ISO date string (or Date) to Persian (Jalali) date in `YYYY-MM-DD` format. Returns `'—'` for null/undefined, and falls back to `String(iso)` on parse errors. Used in DataTable column renders for date display.
+
+```typescript
+import { formatPersianDate } from '@/lib/format';
+
+formatPersianDate('2026-05-23T00:00:00.000Z'); // "1405-03-02"
+formatPersianDate(null);                        // "—"
+```
+
+### PriceInput — `price-input.tsx`
+
+A text input for numeric price values with automatic comma-separated formatting. Import from `@/components/ui`:
+
+```typescript
+import { PriceInput } from '@/components/ui';
+```
+
+```typescript
+<PriceInput
+  label="قیمت خرید"
+  value={purchasePrice}
+  onChange={(val) => setPurchasePrice(val)}
+  error={errors.purchasePrice}
+  helperText="مبلغ را به تومان وارد کنید"
+/>
+```
+
+**Props**:
+
+| Prop        | Type                    | Description                                |
+| ----------- | ----------------------- | ------------------------------------------ |
+| `label`     | `string`                | Label displayed above the input            |
+| `value`     | `number \| null`        | Current numeric value                      |
+| `onChange`  | `(value: number \| null) => void` | Called with parsed number or null  |
+| `error`     | `string`                | Error message (shows in red)               |
+| `helperText`| `string`                | Helper text below input (hidden if error)  |
+| `id`        | `string`                | Custom id (auto-generated from label)      |
+
+- Accepts only numeric keys, Backspace, Delete, arrow keys, Tab, Home, End.
+- Strips non-numeric characters on input (except commas for grouping).
+- Displays formatted value (e.g., `1,234,567`) while storing raw number.
+- Uses `inputMode="numeric"` for mobile number pad.
 
 ## API Client — `src/lib/api-client.ts`
 
