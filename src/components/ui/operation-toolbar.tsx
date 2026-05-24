@@ -25,7 +25,7 @@ const variantStyles: Record<string, string> = {
   outline:
     'border border-border text-zinc-700 dark:text-zinc-300 hover:bg-surface-secondary',
   danger:
-    'bg-danger text-white hover:bg-red-700 dark:hover:bg-red-500 shadow-sm',
+    'bg-danger text-white hover:bg-danger-hover shadow-sm',
   ghost:
     'text-muted hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-surface-secondary',
 };

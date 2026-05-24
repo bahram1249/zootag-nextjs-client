@@ -53,7 +53,7 @@ export function PriceInput({ label, error, helperText, value, onChange, classNam
           text-sm text-zinc-900 placeholder:text-zinc-400
           transition-all duration-200
           focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-0 focus:border-primary
-          disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-zinc-50
+          disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-zinc-50 dark:disabled:bg-zinc-800
           dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-500
           dark:focus:ring-primary/30
           ${error ? 'border-danger focus:border-danger focus:ring-danger/20 dark:focus:ring-danger/30' : 'border-border hover:border-border-hover dark:border-zinc-600 dark:hover:border-zinc-500'}

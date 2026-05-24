@@ -24,7 +24,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         )}
         <div className="relative">
           {leftIcon && (
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-zinc-400 rtl:left-auto rtl:right-0 rtl:pl-0 rtl:pr-3">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted rtl:left-auto rtl:right-0 rtl:pl-0 rtl:pr-3">
               {leftIcon}
             </div>
           )}
@@ -36,7 +36,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               text-sm text-zinc-900 placeholder:text-zinc-400
               transition-all duration-200
               focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-0 focus:border-primary
-              disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-zinc-50
+               disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-zinc-50 dark:disabled:bg-zinc-800
               dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-500
               dark:focus:ring-primary/30
               ${error ? 'border-danger focus:border-danger focus:ring-danger/20 dark:focus:ring-danger/30' : 'border-border hover:border-border-hover dark:border-zinc-600 dark:hover:border-zinc-500'}
@@ -47,7 +47,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             {...props}
           />
           {rightIcon && (
-            <div className="absolute inset-y-0 right-0 flex items-center pr-3 text-zinc-400 rtl:right-auto rtl:left-0 rtl:pr-0 rtl:pl-3">
+            <div className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted rtl:right-auto rtl:left-0 rtl:pr-0 rtl:pl-3">
               {rightIcon}
             </div>
           )}

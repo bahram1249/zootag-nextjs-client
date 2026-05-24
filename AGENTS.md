@@ -127,13 +127,54 @@ Defined in `src/app/globals.css` via `@theme inline`:
 | Token                | Light                  | Dark                    |
 | -------------------- | ---------------------- | ----------------------- |
 | `--color-primary`    | `indigo-600`           | `indigo-400`            |
+| `--color-primary-hover` | `indigo-700`        | `indigo-300`            |
+| `--color-primary-light` | `indigo-50`         | `indigo-950`            |
 | `--color-success`    | `emerald-600`          | `emerald-400`           |
 | `--color-warning`    | `amber-600`            | `amber-400`             |
 | `--color-danger`     | `red-600`              | `red-400`               |
+| `--color-danger-hover` | `red-700`           | `red-500`               |
 | `--color-info`       | `sky-600`              | `sky-400`               |
 | `--color-surface`    | `white`                | `zinc-900`              |
+| `--color-surface-secondary` | `zinc-50`      | `zinc-800`              |
 | `--color-border`     | `zinc-200`             | `zinc-700`              |
+| `--color-border-hover` | `zinc-300`          | `zinc-600`              |
 | `--color-muted`      | `zinc-500`             | `zinc-400`              |
+| `--color-muted-foreground` | `zinc-700`      | `zinc-300`              |
+
+## Dark Mode
+
+Dark mode is toggled by adding/removing `.dark` class on `<html>`. Works via Tailwind v4's `@custom-variant dark (&:where(.dark, .dark *))` in `globals.css`.
+
+**Mechanism**: `ThemeProvider` in `src/contexts/theme-context.tsx` — respects `localStorage` preference, falls back to `prefers-color-scheme`.
+
+### Dark Mode Rules
+
+1. **Prefer design tokens** over hardcoded colors — use `bg-surface`, `text-muted`, `border-border`, `bg-primary` etc. These auto-adapt in dark mode.
+
+2. **When hardcoding colors is unavoidable**, always pair with `dark:` variant:
+   ```tsx
+   // CORRECT
+   className="text-zinc-900 dark:text-zinc-100"
+   className="bg-white dark:bg-zinc-800"
+   className="text-muted hover:text-zinc-900 dark:hover:text-zinc-100"
+   
+   // WRONG — missing dark mode
+   className="text-zinc-900"  // invisible on dark bg
+   className="bg-white"        // white on dark bg
+   className="disabled:bg-zinc-50"  // no dark:disabled:bg-zinc-800
+   ```
+
+3. **Disabled inputs** — always pair `disabled:bg-zinc-50` with `dark:disabled:bg-zinc-800`.
+
+4. **Icon colors** — use `text-muted` token for icon containers instead of `text-zinc-400`.
+
+5. **Placeholders** — pair `placeholder:text-zinc-400` with `dark:placeholder:text-zinc-500`.
+
+6. **Hover states** — always include `dark:` hover counterparts.
+
+7. **Body background** — defined in `globals.css` as `var(--color-zinc-50)` / `var(--color-zinc-950)`. Admin layout overrides with `bg-surface-secondary`.
+
+8. **Modals** (CrudModal, ConfirmDialog, LookupDialog) — overlay uses `bg-black/50`, inner card uses `bg-surface` token.
 
 ### Input — `input.tsx`
 

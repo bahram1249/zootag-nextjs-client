@@ -196,13 +196,13 @@ export function PersianDatePicker({
             text-sm text-zinc-900 placeholder:text-zinc-400
             transition-all duration-200 cursor-pointer
             focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-0 focus:border-primary
-            disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-zinc-50
+            disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-zinc-50 dark:disabled:bg-zinc-800
             dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-500
             dark:focus:ring-primary/30
             ${error ? 'border-danger focus:border-danger focus:ring-danger/20 dark:focus:ring-danger/30' : 'border-border hover:border-border-hover dark:border-zinc-600 dark:hover:border-zinc-500'}
           `}
         />
-        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-zinc-400">
+        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="16"
@@ -220,7 +220,7 @@ export function PersianDatePicker({
             <line x1="3" y1="10" x2="21" y2="10" />
           </svg>
         </div>
-        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-zinc-400">
+        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="14"
@@ -246,7 +246,7 @@ export function PersianDatePicker({
             <button
               type="button"
               onClick={() => { setViewYear((y) => y - 1); }}
-              className="p-1 rounded-md text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100
+              className="p-1 rounded-md text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 hover:bg-zinc-100
                          dark:hover:text-zinc-200 dark:hover:bg-zinc-800 transition-colors"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -257,7 +257,7 @@ export function PersianDatePicker({
             <button
               type="button"
               onClick={handlePrevMonth}
-              className="p-1 rounded-md text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100
+              className="p-1 rounded-md text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 hover:bg-zinc-100
                          dark:hover:text-zinc-200 dark:hover:bg-zinc-800 transition-colors"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -273,7 +273,7 @@ export function PersianDatePicker({
             <button
               type="button"
               onClick={handleNextMonth}
-              className="p-1 rounded-md text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100
+              className="p-1 rounded-md text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 hover:bg-zinc-100
                          dark:hover:text-zinc-200 dark:hover:bg-zinc-800 transition-colors"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -283,7 +283,7 @@ export function PersianDatePicker({
             <button
               type="button"
               onClick={() => { setViewYear((y) => y + 1); }}
-              className="p-1 rounded-md text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100
+              className="p-1 rounded-md text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 hover:bg-zinc-100
                          dark:hover:text-zinc-200 dark:hover:bg-zinc-800 transition-colors"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
