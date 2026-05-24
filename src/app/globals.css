@@ -3,48 +3,69 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
-  --color-primary: var(--color-indigo-600);
-  --color-primary-light: var(--color-indigo-50);
-  --color-primary-hover: var(--color-indigo-700);
-  --color-success: var(--color-emerald-600);
-  --color-success-light: var(--color-emerald-50);
-  --color-warning: var(--color-amber-600);
-  --color-warning-light: var(--color-amber-50);
-  --color-danger: var(--color-red-600);
-  --color-danger-hover: var(--color-red-700);
-  --color-danger-light: var(--color-red-50);
-  --color-info: var(--color-sky-600);
-  --color-info-light: var(--color-sky-50);
-  --color-surface: #ffffff;
-  --color-surface-secondary: var(--color-zinc-50);
-  --color-border: var(--color-zinc-200);
-  --color-border-hover: var(--color-zinc-300);
-  --color-muted: var(--color-zinc-500);
-  --color-muted-foreground: var(--color-zinc-700);
+  --color-primary: var(--color-primary-default);
+  --color-primary-light: var(--color-primary-light-default);
+  --color-primary-hover: var(--color-primary-hover-default);
+  --color-success: var(--color-success-default);
+  --color-success-light: var(--color-success-light-default);
+  --color-warning: var(--color-warning-default);
+  --color-warning-light: var(--color-warning-light-default);
+  --color-danger: var(--color-danger-default);
+  --color-danger-hover: var(--color-danger-hover-default);
+  --color-danger-light: var(--color-danger-light-default);
+  --color-info: var(--color-info-default);
+  --color-info-light: var(--color-info-light-default);
+  --color-surface: var(--color-surface-default);
+  --color-surface-secondary: var(--color-surface-secondary-default);
+  --color-border: var(--color-border-default);
+  --color-border-hover: var(--color-border-hover-default);
+  --color-muted: var(--color-muted-default);
+  --color-muted-foreground: var(--color-muted-foreground-default);
   --font-sans: var(--font-vazirmatn);
   --radius-input: 0.5rem;
   --radius-badge: 9999px;
 }
 
+:root {
+  --color-primary-default: var(--color-indigo-600);
+  --color-primary-light-default: var(--color-indigo-50);
+  --color-primary-hover-default: var(--color-indigo-700);
+  --color-success-default: var(--color-emerald-600);
+  --color-success-light-default: var(--color-emerald-50);
+  --color-warning-default: var(--color-amber-600);
+  --color-warning-light-default: var(--color-amber-50);
+  --color-danger-default: var(--color-red-600);
+  --color-danger-hover-default: var(--color-red-700);
+  --color-danger-light-default: var(--color-red-50);
+  --color-info-default: var(--color-sky-600);
+  --color-info-light-default: var(--color-sky-50);
+  --color-surface-default: #ffffff;
+  --color-surface-secondary-default: var(--color-zinc-50);
+  --color-border-default: var(--color-zinc-200);
+  --color-border-hover-default: var(--color-zinc-300);
+  --color-muted-default: var(--color-zinc-500);
+  --color-muted-foreground-default: var(--color-zinc-700);
+}
+
 .dark {
-  --color-primary: var(--color-indigo-400);
-  --color-primary-light: var(--color-indigo-950);
-  --color-primary-hover: var(--color-indigo-300);
-  --color-success: var(--color-emerald-400);
-  --color-success-light: var(--color-emerald-950);
-  --color-warning: var(--color-amber-400);
-  --color-warning-light: var(--color-amber-950);
-  --color-danger: var(--color-red-400);
-  --color-danger-hover: var(--color-red-500);
-  --color-danger-light: var(--color-red-950);
-  --color-info: var(--color-sky-400);
-  --color-info-light: var(--color-sky-950);
-  --color-surface: var(--color-zinc-900);
-  --color-surface-secondary: var(--color-zinc-800);
-  --color-border: var(--color-zinc-700);
-  --color-border-hover: var(--color-zinc-600);
-  --color-muted: var(--color-zinc-400);
-  --color-muted-foreground: var(--color-zinc-300);
+  --color-primary-default: var(--color-indigo-400);
+  --color-primary-light-default: var(--color-indigo-950);
+  --color-primary-hover-default: var(--color-indigo-300);
+  --color-success-default: var(--color-emerald-400);
+  --color-success-light-default: var(--color-emerald-950);
+  --color-warning-default: var(--color-amber-400);
+  --color-warning-light-default: var(--color-amber-950);
+  --color-danger-default: var(--color-red-400);
+  --color-danger-hover-default: var(--color-red-500);
+  --color-danger-light-default: var(--color-red-950);
+  --color-info-default: var(--color-sky-400);
+  --color-info-light-default: var(--color-sky-950);
+  --color-surface-default: var(--color-zinc-900);
+  --color-surface-secondary-default: var(--color-zinc-800);
+  --color-border-default: var(--color-zinc-700);
+  --color-border-hover-default: var(--color-zinc-600);
+  --color-muted-default: var(--color-zinc-400);
+  --color-muted-foreground-default: var(--color-zinc-300);
 }
 
 :root {
