@@ -11,3 +11,7 @@ export { ConfirmDialog } from './confirm-dialog';
 export { LookupDialog } from './lookup-dialog';
 export type { LookupConfig } from './lookup-dialog';
 export { PriceInput } from './price-input';
+export { PageHeader } from './page-header';
+export type { BreadcrumbItem } from './page-header';
+export { OperationToolbar } from './operation-toolbar';
+export type { OperationButton } from './operation-toolbar';

@@ -16,6 +16,7 @@ interface DataTableProps<T> {
   description?: string;
   defaultLimit?: number;
   ignorePaging?: boolean;
+  hideHeader?: boolean;
 }
 
 export function DataTable<T>({
@@ -25,6 +26,7 @@ export function DataTable<T>({
   description,
   defaultLimit = 10,
   ignorePaging = false,
+  hideHeader = false,
 }: DataTableProps<T>) {
   const [data, setData] = useState<T[]>([]);
   const [total, setTotal] = useState(0);
@@ -86,34 +88,36 @@ export function DataTable<T>({
   return (
     <div className="flex flex-1 flex-col">
       {/* header */}
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">{title}</h1>
-          {description && <p className="mt-0.5 text-sm text-muted">{description}</p>}
-        </div>
-        <div className="relative">
-          <svg
-            className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+      {!hideHeader && (
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">{title}</h1>
+            {description && <p className="mt-0.5 text-sm text-muted">{description}</p>}
+          </div>
+          <div className="relative">
+            <svg
+              className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="جستجو..."
+              className="h-9 w-56 rounded-lg border border-border bg-surface pr-9 pl-3 text-sm text-zinc-900 placeholder-muted outline-none transition-colors focus:border-primary dark:text-zinc-100"
             />
-          </svg>
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="جستجو..."
-            className="h-9 w-56 rounded-lg border border-border bg-surface pr-9 pl-3 text-sm text-zinc-900 placeholder-muted outline-none transition-colors focus:border-primary dark:text-zinc-100"
-          />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* table */}
       <div className="flex-1 overflow-hidden rounded-xl border border-border bg-surface">

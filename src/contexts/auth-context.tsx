@@ -38,22 +38,21 @@ async function fetchProfile() {
   }
 }
 
-function initState(): AuthState {
-  const tokens = getStoredTokens();
-  if (tokens) {
-    if (tokens.access_token) {
-      apiClient.setToken(tokens.access_token);
-    }
+function initState(initialAccessToken?: string | null): AuthState {
+  if (initialAccessToken) {
+    apiClient.setToken(initialAccessToken);
+    return { isAuthenticated: true, isLoading: true, user: null };
   }
-  return {
-    isAuthenticated: !!tokens,
-    isLoading: !!tokens,
-    user: null,
-  };
+  const tokens = typeof document !== 'undefined' ? getStoredTokens() : null;
+  if (tokens) {
+    apiClient.setToken(tokens.access_token);
+    return { isAuthenticated: true, isLoading: true, user: null };
+  }
+  return { isAuthenticated: false, isLoading: false, user: null };
 }
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AuthState>(initState);
+export function AuthProvider({ children, initialAccessToken }: { children: ReactNode; initialAccessToken?: string | null }) {
+  const [state, setState] = useState<AuthState>(() => initState(initialAccessToken));
 
   useEffect(() => {
     if (!state.isAuthenticated) return;

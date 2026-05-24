@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Vazirmatn } from 'next/font/google';
+import { headers } from 'next/headers';
 import { AuthClientLayout } from '@/components/auth/auth-client-layout';
 import { ThemeClientLayout } from '@/components/theme/theme-client-layout';
 import './globals.css';
@@ -25,11 +26,18 @@ const themeScript = `
   })();
 `;
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const headersList = await headers();
+  const cookieHeader = headersList.get('cookie') || '';
+  const accessToken = cookieHeader
+    .split('; ')
+    .find(c => c.startsWith('access_token='))
+    ?.split('=')[1] ?? null;
+
   return (
     <html
       lang="fa"
@@ -37,12 +45,10 @@ export default function RootLayout({
       className={`${vazirmatn.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      </head>
       <body className="min-h-full flex flex-col">
+        <div aria-hidden="true" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: `<script>${themeScript}<\/script>` }} />
         <ThemeClientLayout>
-          <AuthClientLayout>{children}</AuthClientLayout>
+          <AuthClientLayout initialAccessToken={accessToken}>{children}</AuthClientLayout>
         </ThemeClientLayout>
       </body>
     </html>

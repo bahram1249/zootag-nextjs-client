@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { DataTable, CrudModal, LookupDialog } from '@/components/ui';
+import { DataTable, CrudModal, LookupDialog, PageHeader, OperationToolbar } from '@/components/ui';
 import type { Column, FieldDef, LookupConfig } from '@/components/ui';
 import { apiClient, ApiError } from '@/lib/api-client';
 import { formatPrice, formatPersianDate } from '@/lib/format';
@@ -217,21 +217,38 @@ export default function DeviceSalePricesPage() {
 
   return (
     <div>
-      <button
-        onClick={handleCreate}
-        className="mb-4 flex h-9 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-medium text-white transition-colors hover:bg-primary/90"
+      <PageHeader
+        variant="card"
+        title="قیمت‌های فروش دستگاه"
+        description="مدیریت قیمت‌های فروش (تاریخچه ضمیمه‌شونده)"
+        breadcrumbs={[
+          { label: 'پنل مدیریت', href: '/admin' },
+          { label: 'قیمت‌های فروش' },
+        ]}
       >
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-        </svg>
-        افزودن قیمت فروش
-      </button>
+        <OperationToolbar
+          buttons={[
+            {
+              key: 'create',
+              label: 'افزودن قیمت فروش',
+              icon: (
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              ),
+              variant: 'primary',
+              onClick: handleCreate,
+            },
+          ]}
+        />
+      </PageHeader>
       <DataTable
         key={refreshKey}
         columns={columns}
         apiEndpoint="/v1/api/zootag/admin/deviceSalePrices"
         title="قیمت‌های فروش دستگاه"
         description="مدیریت قیمت‌های فروش (تاریخچه ضمیمه‌شونده)"
+        hideHeader
       />
       <CrudModal
         open={modalOpen}
