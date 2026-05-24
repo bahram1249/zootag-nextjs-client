@@ -20,7 +20,7 @@ interface LookupDialogProps {
   open: boolean;
   config: LookupConfig;
   selectedValue: string | number | null;
-  onSelect: (value: string | number, label: string) => void;
+  onSelect: (value: string | number, label: string, row: Record<string, unknown>) => void;
   onClose: () => void;
   defaultLimit?: number;
 }
@@ -236,7 +236,7 @@ export function LookupDialog({
                     <td className="whitespace-nowrap px-3 py-2.5">
                       <button
                         onClick={() => {
-                          onSelect(row[config.valueKey] as string | number, row[config.labelKey] as string);
+                          onSelect(row[config.valueKey] as string | number, row[config.labelKey] as string, row);
                           onClose();
                         }}
                         className="flex h-7 items-center rounded bg-primary/10 px-2.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"

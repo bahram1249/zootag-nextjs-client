@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { DataTable, CrudModal, LookupDialog, Badge } from '@/components/ui';
+import { DataTable, CrudModal, LookupDialog, Badge, PersianDatePicker } from '@/components/ui';
 import type { Column, FieldDef, LookupConfig } from '@/components/ui';
 import { apiClient, ApiError } from '@/lib/api-client';
 import { formatPrice, formatPersianDate } from '@/lib/format';
@@ -30,6 +30,19 @@ interface DeviceSale {
   createdUser?: { id: number; firstname: string; lastname: string };
 }
 
+interface SalePreview {
+  salePrice: number;
+  saleCurrencyId: number;
+  salePriceIRR: number;
+  purchasePriceIRR: number;
+  grossProfitIRR: number;
+  commissionTypeId: number;
+  commissionType?: { id: number; name: string };
+  commissionValue: number;
+  commissionAmountIRR: number;
+  netProfitIRR: number;
+}
+
 const deviceLookupConfig: LookupConfig = {
   endpoint: '/v1/api/zootag/admin/devices',
   labelKey: 'serialNumber',
@@ -56,28 +69,11 @@ const marketerLookupConfig: LookupConfig = {
   formFields: [],
 };
 
-const currencyLookupConfig: LookupConfig = {
-  endpoint: '/v1/api/zootag/admin/currencies',
-  labelKey: 'name',
-  valueKey: 'id',
-  title: 'ارز',
-  columns: [
-    { key: 'id', header: 'شناسه' },
-    { key: 'code', header: 'کد' },
-    { key: 'name', header: 'نام' },
-    { key: 'symbol', header: 'نماد' },
-  ],
-  formFields: [],
-};
-
 const modalFields: FieldDef[] = [
   { name: 'deviceId', label: 'دستگاه', type: 'string', required: true },
+  { name: 'deviceSalePriceId', label: 'قیمت فروش', type: 'string', required: true },
   { name: 'marketerId', label: 'بازاریاب', type: 'string', required: true },
   { name: 'saleDate', label: 'تاریخ فروش', type: 'date', required: true },
-  { name: 'salePrice', label: 'قیمت فروش', type: 'number', required: true },
-  { name: 'saleCurrencyId', label: 'ارز فروش', type: 'string', required: true },
-  { name: 'commissionTypeId', label: 'نوع کمیسیون', type: 'string', placeholder: 'اختیاری' },
-  { name: 'commissionValue', label: 'مقدار کمیسیون', type: 'number', placeholder: 'اختیاری' },
   { name: 'notes', label: 'یادداشت', type: 'string', placeholder: 'اختیاری' },
 ];
 
@@ -88,39 +84,79 @@ export default function DeviceSalesPage() {
 
   const [selectedDeviceId, setSelectedDeviceId] = useState<number | null>(null);
   const [selectedDeviceName, setSelectedDeviceName] = useState('');
+  const [selectedDeviceTypeId, setSelectedDeviceTypeId] = useState<number | null>(null);
   const [selectedMarketerId, setSelectedMarketerId] = useState<number | null>(null);
   const [selectedMarketerName, setSelectedMarketerName] = useState('');
-  const [selectedCurrencyId, setSelectedCurrencyId] = useState<number | null>(null);
-  const [selectedCurrencyName, setSelectedCurrencyName] = useState('');
+  const [selectedDeviceSalePriceId, setSelectedDeviceSalePriceId] = useState<number | null>(null);
+  const [selectedDeviceSalePriceLabel, setSelectedDeviceSalePriceLabel] = useState('');
+  const [selectedSaleDate, setSelectedSaleDate] = useState<string>('');
+  const [saleDateError, setSaleDateError] = useState<string>('');
+
+  const [preview, setPreview] = useState<SalePreview | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [deviceLookupOpen, setDeviceLookupOpen] = useState(false);
   const [marketerLookupOpen, setMarketerLookupOpen] = useState(false);
-  const [currencyLookupOpen, setCurrencyLookupOpen] = useState(false);
-  const [selectedCommissionTypeId, setSelectedCommissionTypeId] = useState<number | null>(null);
-  const [commissionTypeOptions, setCommissionTypeOptions] = useState<{ value: number; label: string }[]>([]);
+  const [priceLookupOpen, setPriceLookupOpen] = useState(false);
+  const [priceLookupConfig, setPriceLookupConfig] = useState<LookupConfig | null>(null);
   const pendingOnChangeRef = useRef<((v: unknown) => void) | null>(null);
   const lookupFieldRef = useRef<string>('');
 
   useEffect(() => {
-    if (!modalOpen) return;
-    (async () => {
-      try {
-        const { result } = await apiClient.get<{ id: number; name: string }[]>('/v1/api/zootag/admin/commissionTypes');
-        setCommissionTypeOptions(result.map((s) => ({ value: s.id, label: s.name })));
-      } catch {
-        setCommissionTypeOptions([]);
-      }
-    })();
+    if (!modalOpen) {
+      setPreview(null);
+      setSelectedSaleDate('');
+      setSaleDateError('');
+    }
   }, [modalOpen]);
+
+  useEffect(() => {
+    if (previewTimerRef.current) {
+      clearTimeout(previewTimerRef.current);
+      previewTimerRef.current = null;
+    }
+
+    if (!selectedDeviceId || !selectedDeviceSalePriceId || !selectedMarketerId || !selectedSaleDate) {
+      setPreview(null);
+      return;
+    }
+
+    setPreviewLoading(true);
+    previewTimerRef.current = setTimeout(async () => {
+      try {
+        const params = new URLSearchParams({
+          deviceId: String(selectedDeviceId),
+          deviceSalePriceId: String(selectedDeviceSalePriceId),
+          marketerId: String(selectedMarketerId),
+          saleDate: selectedSaleDate,
+        });
+        const { result } = await apiClient.get<SalePreview>(
+          `/v1/api/zootag/admin/deviceSales/preview?${params}`,
+        );
+        setPreview(result);
+      } catch {
+        setPreview(null);
+      } finally {
+        setPreviewLoading(false);
+      }
+    }, 400);
+
+    return () => {
+      if (previewTimerRef.current) {
+        clearTimeout(previewTimerRef.current);
+      }
+    };
+  }, [selectedDeviceId, selectedDeviceSalePriceId, selectedMarketerId, selectedSaleDate]);
 
   const handleCreate = () => {
     setSelectedDeviceId(null);
     setSelectedDeviceName('');
+    setSelectedDeviceTypeId(null);
     setSelectedMarketerId(null);
     setSelectedMarketerName('');
-    setSelectedCurrencyId(null);
-    setSelectedCurrencyName('');
-    setSelectedCommissionTypeId(null);
+    setSelectedDeviceSalePriceId(null);
+    setSelectedDeviceSalePriceLabel('');
     setModalOpen(true);
   };
 
@@ -131,8 +167,7 @@ export default function DeviceSalesPage() {
         ...values,
         deviceId: selectedDeviceId,
         marketerId: selectedMarketerId,
-        saleCurrencyId: selectedCurrencyId,
-        commissionTypeId: selectedCommissionTypeId,
+        deviceSalePriceId: selectedDeviceSalePriceId,
       };
       await apiClient.post('/v1/api/zootag/admin/deviceSales', payload);
       setModalOpen(false);
@@ -142,6 +177,29 @@ export default function DeviceSalesPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const openPriceLookup = (onChange: (v: unknown) => void) => {
+    if (!selectedDeviceTypeId) {
+      alert('لطفا ابتدا دستگاه را انتخاب کنید');
+      return;
+    }
+    pendingOnChangeRef.current = onChange;
+    lookupFieldRef.current = 'deviceSalePriceId';
+    setPriceLookupConfig({
+      endpoint: `/v1/api/zootag/admin/deviceSalePrices?deviceTypeId=${selectedDeviceTypeId}`,
+      labelKey: 'salePrice',
+      valueKey: 'id',
+      title: 'قیمت فروش',
+      columns: [
+        { key: 'id', header: 'شناسه' },
+        { key: 'salePrice', header: 'قیمت', render: (v) => formatPrice(v) },
+        { key: 'currency', header: 'ارز', render: (v) => (v as { code?: string })?.code ?? '' },
+        { key: 'isActive', header: 'فعال', render: (v) => (v ? 'بله' : 'خیر') },
+      ],
+      formFields: [],
+    });
+    setPriceLookupOpen(true);
   };
 
   const renderCustomField = (
@@ -174,7 +232,43 @@ export default function DeviceSalesPage() {
             {selectedDeviceId != null && (
               <button
                 type="button"
-                onClick={() => { setSelectedDeviceId(null); setSelectedDeviceName(''); onChange(null); }}
+                onClick={() => { setSelectedDeviceId(null); setSelectedDeviceName(''); setSelectedDeviceTypeId(null); setSelectedDeviceSalePriceId(null); setSelectedDeviceSalePriceLabel(''); onChange(null); }}
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-secondary"
+              >
+                ×
+              </button>
+            )}
+          </div>
+          {error && <p className="mt-1 text-xs text-danger">{error}</p>}
+        </div>
+      );
+    }
+
+    if (field.name === 'deviceSalePriceId') {
+      return (
+        <div key={field.name}>
+          <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            {field.label} <span className="text-danger">*</span>
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              className={`flex-1 rounded-lg border bg-surface px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 ${error ? 'border-danger' : 'border-border'}`}
+              value={selectedDeviceSalePriceLabel}
+              disabled
+              placeholder="ابتدا دستگاه را انتخاب کنید"
+            />
+            <button
+              type="button"
+              onClick={() => openPriceLookup(onChange)}
+              className="flex h-9 items-center rounded-lg bg-primary px-3 text-sm font-medium text-white transition-colors hover:bg-primary/90"
+            >
+              انتخاب
+            </button>
+            {selectedDeviceSalePriceId != null && (
+              <button
+                type="button"
+                onClick={() => { setSelectedDeviceSalePriceId(null); setSelectedDeviceSalePriceLabel(''); onChange(null); }}
                 className="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-secondary"
               >
                 ×
@@ -222,67 +316,20 @@ export default function DeviceSalesPage() {
       );
     }
 
-    if (field.name === 'commissionTypeId') {
+    if (field.name === 'saleDate') {
       return (
         <div key={field.name}>
-          <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            {field.label}
-          </label>
-          <select
-            value={selectedCommissionTypeId ?? ''}
-            onChange={(e) => {
-              const id = e.target.value ? Number(e.target.value) : null;
-              setSelectedCommissionTypeId(id);
-              onChange(id);
+          <PersianDatePicker
+            label={field.label}
+            value={selectedSaleDate ? new Date(selectedSaleDate) : null}
+            onChange={(v) => {
+              setSelectedSaleDate(v.isoDate);
+              onChange(v.isoDate);
+              setSaleDateError('');
             }}
-            className={`w-full rounded-lg border bg-surface px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 ${
-              error ? 'border-danger' : 'border-border'
-            }`}
-          >
-            <option value="">بدون مقدار (پیش‌فرض بازاریاب)</option>
-            {commissionTypeOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-          {error && <p className="mt-1 text-xs text-danger">{error}</p>}
-        </div>
-      );
-    }
-
-    if (field.name === 'saleCurrencyId') {
-      return (
-        <div key={field.name}>
-          <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            {field.label} <span className="text-danger">*</span>
-          </label>
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              className={`flex-1 rounded-lg border bg-surface px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 ${error ? 'border-danger' : 'border-border'}`}
-              value={selectedCurrencyName}
-              disabled
-              placeholder="ارز فروش را انتخاب کنید"
-            />
-            <button
-              type="button"
-              onClick={() => { lookupFieldRef.current = 'currency'; pendingOnChangeRef.current = onChange; setCurrencyLookupOpen(true); }}
-              className="flex h-9 items-center rounded-lg bg-primary px-3 text-sm font-medium text-white transition-colors hover:bg-primary/90"
-            >
-              انتخاب
-            </button>
-            {selectedCurrencyId != null && (
-              <button
-                type="button"
-                onClick={() => { setSelectedCurrencyId(null); setSelectedCurrencyName(''); onChange(null); }}
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-secondary"
-              >
-                ×
-              </button>
-            )}
-          </div>
-          {error && <p className="mt-1 text-xs text-danger">{error}</p>}
+            error={saleDateError}
+            placeholder={field.placeholder}
+          />
         </div>
       );
     }
@@ -346,22 +393,96 @@ export default function DeviceSalesPage() {
         onSave={handleSave}
         onClose={() => setModalOpen(false)}
         renderCustomField={renderCustomField}
-      />
+      >
+        {previewLoading && (
+          <div className="flex items-center justify-center py-3 text-sm text-muted">
+            <span className="ml-2 h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            در حال محاسبه کمیسیون...
+          </div>
+        )}
+        {!previewLoading && preview && (
+          <div className="rounded-lg border border-border bg-surface-secondary p-4">
+            <h4 className="mb-3 text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+              پیش‌نمایش محاسبات
+            </h4>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted">قیمت فروش:</span>
+                <span className="font-medium text-zinc-800 dark:text-zinc-200">{formatPrice(preview.salePrice)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted">قیمت فروش (ریال):</span>
+                <span className="font-medium text-zinc-800 dark:text-zinc-200">{formatPrice(preview.salePriceIRR)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted">قیمت خرید (ریال):</span>
+                <span className="font-medium text-zinc-800 dark:text-zinc-200">{formatPrice(preview.purchasePriceIRR)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted">سود ناخالص:</span>
+                <span className="font-medium text-success">{formatPrice(preview.grossProfitIRR)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted">نوع کمیسیون:</span>
+                <span className="font-medium text-zinc-800 dark:text-zinc-200">
+                  {preview.commissionType ? (
+                    <Badge variant="info" size="sm">{preview.commissionType.name}</Badge>
+                  ) : (
+                    '—'
+                  )}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted">مقدار کمیسیون:</span>
+                <span className="font-medium text-zinc-800 dark:text-zinc-200">
+                  {preview.commissionTypeId === 1 ? `${preview.commissionValue}%` : formatPrice(preview.commissionValue)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted">مبلغ کمیسیون:</span>
+                <span className="font-medium text-warning">{formatPrice(preview.commissionAmountIRR)}</span>
+              </div>
+              <div className="flex justify-between border-t border-border pt-1">
+                <span className="font-semibold text-muted">سود خالص:</span>
+                <span className="font-semibold text-primary">{formatPrice(preview.netProfitIRR)}</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </CrudModal>
       <LookupDialog
         open={deviceLookupOpen}
         config={deviceLookupConfig}
         selectedValue={selectedDeviceId}
-        onSelect={(value, label) => {
+        onSelect={(value, label, row) => {
           if (pendingOnChangeRef.current) {
             pendingOnChangeRef.current(value);
             pendingOnChangeRef.current = null;
           }
           setSelectedDeviceId(value as number);
           setSelectedDeviceName(label);
+          setSelectedDeviceTypeId(row?.deviceTypeId as number ?? null);
           setDeviceLookupOpen(false);
         }}
         onClose={() => { pendingOnChangeRef.current = null; setDeviceLookupOpen(false); }}
       />
+      {priceLookupConfig && (
+        <LookupDialog
+          open={priceLookupOpen}
+          config={priceLookupConfig}
+          selectedValue={selectedDeviceSalePriceId}
+          onSelect={(value, label) => {
+            if (pendingOnChangeRef.current) {
+              pendingOnChangeRef.current(value);
+              pendingOnChangeRef.current = null;
+            }
+            setSelectedDeviceSalePriceId(value as number);
+            setSelectedDeviceSalePriceLabel(label);
+            setPriceLookupOpen(false);
+          }}
+          onClose={() => { pendingOnChangeRef.current = null; setPriceLookupOpen(false); }}
+        />
+      )}
       <LookupDialog
         open={marketerLookupOpen}
         config={marketerLookupConfig}
@@ -376,21 +497,6 @@ export default function DeviceSalesPage() {
           setMarketerLookupOpen(false);
         }}
         onClose={() => { pendingOnChangeRef.current = null; setMarketerLookupOpen(false); }}
-      />
-      <LookupDialog
-        open={currencyLookupOpen}
-        config={currencyLookupConfig}
-        selectedValue={selectedCurrencyId}
-        onSelect={(value, label) => {
-          if (pendingOnChangeRef.current) {
-            pendingOnChangeRef.current(value);
-            pendingOnChangeRef.current = null;
-          }
-          setSelectedCurrencyId(value as number);
-          setSelectedCurrencyName(label);
-          setCurrencyLookupOpen(false);
-        }}
-        onClose={() => { pendingOnChangeRef.current = null; setCurrencyLookupOpen(false); }}
       />
     </div>
   );

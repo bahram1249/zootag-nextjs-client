@@ -43,6 +43,7 @@ interface CrudModalProps {
   onSave: (values: Record<string, unknown>) => void;
   onClose: () => void;
   renderCustomField?: (field: FieldDef, value: unknown, onChange: (v: unknown) => void, error?: string) => ReactNode;
+  children?: ReactNode;
 }
 
 function BooleanInput({
@@ -77,6 +78,7 @@ export function CrudModal({
   onSave,
   onClose,
   renderCustomField,
+  children,
 }: CrudModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [values, setValues] = useState<Record<string, unknown>>({});
@@ -249,6 +251,7 @@ export function CrudModal({
 
         <div className="flex flex-col gap-4 overflow-y-auto px-6 py-4 max-h-[60vh]">
           {fields.map(renderField)}
+          {children}
         </div>
 
         <div className="flex items-center justify-end gap-2 border-t border-border px-6 py-4">
