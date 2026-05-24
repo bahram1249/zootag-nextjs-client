@@ -13,12 +13,10 @@ interface Contract {
   title: string;
   startDate: string;
   endDate: string;
-  currencyId: number;
   contractStatusId: number;
   notes?: string;
   isActive: boolean;
   company?: { id: number; companyName: string };
-  currency?: { id: number; code: string; name: string; symbol: string };
   contractStatus?: { id: number; name: string };
 }
 
@@ -43,13 +41,9 @@ interface ContractPeriodDevicePrice {
   purchasePriceIRR: number;
   minimumQuantity: number;
   maximumQuantity: number;
-  sellingPrice?: number;
-  sellingCurrencyId?: number;
-  sellingPriceIRR?: number;
   isActive: boolean;
   deviceType?: { id: number; typeName: string; modelCode: string };
   currency?: { id: number; code: string; name: string; symbol: string };
-  sellingCurrency?: { id: number; code: string; name: string; symbol: string };
 }
 
 const companyLookupConfig: LookupConfig = {
@@ -108,7 +102,6 @@ const contractModalFields: FieldDef[] = [
   { name: 'endDate', label: 'تاریخ پایان', type: 'date', required: true },
   { name: 'notes', label: 'توضیحات', type: 'textarea', placeholder: 'توضیحات (اختیاری)' },
   { name: 'companyId', label: 'شرکت', type: 'string', required: true },
-  { name: 'currencyId', label: 'ارز', type: 'string', required: true },
   { name: 'contractStatusId', label: 'وضعیت', type: 'string', required: true },
 ];
 
@@ -126,8 +119,6 @@ const priceModalFields: FieldDef[] = [
   { name: 'currencyId', label: 'ارز', type: 'string', required: true },
   { name: 'minimumQuantity', label: 'حداقل تعداد', type: 'number', required: true },
   { name: 'maximumQuantity', label: 'حداکثر تعداد', type: 'number', required: true },
-  { name: 'sellingPrice', label: 'قیمت فروش', type: 'price', placeholder: 'قیمت فروش (اختیاری)' },
-  { name: 'sellingCurrencyId', label: 'ارز فروش', type: 'string', placeholder: 'ارز فروش (اختیاری)' },
   { name: 'notes', label: 'توضیحات', type: 'textarea', placeholder: 'توضیحات (اختیاری)' },
 ];
 
@@ -143,8 +134,6 @@ export default function ContractsPage() {
 
   const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null);
   const [selectedCompanyName, setSelectedCompanyName] = useState('');
-  const [selectedCurrencyId, setSelectedCurrencyId] = useState<number | null>(null);
-  const [selectedCurrencyName, setSelectedCurrencyName] = useState('');
   const [selectedContractStatusId, setSelectedContractStatusId] = useState<number | null>(null);
   const [selectedContractStatusName, setSelectedContractStatusName] = useState('');
   const [contractStatusOptions, setContractStatusOptions] = useState<{ value: number; label: string }[]>([]);
@@ -183,9 +172,6 @@ export default function ContractsPage() {
   const [selectedDeviceTypeName, setSelectedDeviceTypeName] = useState('');
   const [selectedPriceCurrencyId, setSelectedPriceCurrencyId] = useState<number | null>(null);
   const [selectedPriceCurrencyName, setSelectedPriceCurrencyName] = useState('');
-  const [selectedSellingCurrencyId, setSelectedSellingCurrencyId] = useState<number | null>(null);
-  const [selectedSellingCurrencyName, setSelectedSellingCurrencyName] = useState('');
-
   const pricePendingOnChangeRef = useRef<((v: unknown) => void) | null>(null);
 
   // Fetch contract statuses
@@ -218,8 +204,6 @@ export default function ContractsPage() {
   const handleCreate = () => {
     setSelectedCompanyId(null);
     setSelectedCompanyName('');
-    setSelectedCurrencyId(null);
-    setSelectedCurrencyName('');
     setSelectedContractStatusId(null);
     setSelectedContractStatusName('');
     setContractStatusOptions([]);
@@ -231,8 +215,6 @@ export default function ContractsPage() {
   const handleEdit = (row: Contract) => {
     setSelectedCompanyId(row.companyId);
     setSelectedCompanyName(row.company?.companyName ?? '');
-    setSelectedCurrencyId(row.currencyId);
-    setSelectedCurrencyName(row.currency?.name ?? '');
     setSelectedContractStatusId(row.contractStatusId);
     setSelectedContractStatusName(row.contractStatus?.name ?? '');
     setModalMode('edit');
@@ -246,7 +228,6 @@ export default function ContractsPage() {
       const payload: Record<string, unknown> = {
         ...values,
         companyId: selectedCompanyId,
-        currencyId: selectedCurrencyId,
         contractStatusId: selectedContractStatusId,
       };
       if (modalMode === 'create') {
@@ -342,8 +323,6 @@ export default function ContractsPage() {
     setSelectedDeviceTypeName('');
     setSelectedPriceCurrencyId(null);
     setSelectedPriceCurrencyName('');
-    setSelectedSellingCurrencyId(null);
-    setSelectedSellingCurrencyName('');
     setPriceModalMode('create');
     setSelectedPrice(null);
     setPriceModalOpen(true);
@@ -354,8 +333,6 @@ export default function ContractsPage() {
     setSelectedDeviceTypeName(row.deviceType ? `${row.deviceType.typeName} (${row.deviceType.modelCode})` : '');
     setSelectedPriceCurrencyId(row.currencyId);
     setSelectedPriceCurrencyName(row.currency?.name ?? '');
-    setSelectedSellingCurrencyId(row.sellingCurrencyId ?? null);
-    setSelectedSellingCurrencyName(row.sellingCurrency?.name ?? '');
     setPriceModalMode('edit');
     setSelectedPrice(row);
     setPriceModalOpen(true);
@@ -370,7 +347,6 @@ export default function ContractsPage() {
         contractPeriodId: pricesPeriod.id,
         deviceTypeId: selectedDeviceTypeId,
         currencyId: selectedPriceCurrencyId,
-        sellingCurrencyId: selectedSellingCurrencyId || null,
       };
       if (priceModalMode === 'create') {
         await apiClient.post('/v1/api/zootag/admin/contractPeriodDevicePrices', payload);
@@ -442,52 +418,6 @@ export default function ContractsPage() {
                 onClick={() => {
                   setSelectedCompanyId(null);
                   setSelectedCompanyName('');
-                  onChange(null);
-                }}
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-secondary"
-              >
-                ×
-              </button>
-            )}
-          </div>
-          {error && <p className="mt-1 text-xs text-danger">{error}</p>}
-        </div>
-      );
-    }
-
-    if (field.name === 'currencyId') {
-      return (
-        <div key={field.name}>
-          <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            {field.label} {field.required && <span className="text-danger">*</span>}
-          </label>
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              className={`flex-1 rounded-lg border bg-surface px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 ${
-                error ? 'border-danger' : 'border-border'
-              }`}
-              value={selectedCurrencyName}
-              disabled
-              placeholder="ارز را انتخاب کنید"
-            />
-            <button
-              type="button"
-              onClick={() => {
-                setLookupConfig(currencyLookupConfig);
-                pendingOnChangeRef.current = onChange;
-                setLookupOpen(true);
-              }}
-              className="flex h-9 items-center rounded-lg bg-primary px-3 text-sm font-medium text-white transition-colors hover:bg-primary/90"
-            >
-              انتخاب
-            </button>
-            {selectedCurrencyId != null && (
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedCurrencyId(null);
-                  setSelectedCurrencyName('');
                   onChange(null);
                 }}
                 className="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-secondary"
@@ -676,53 +606,6 @@ export default function ContractsPage() {
       );
     }
 
-    if (field.name === 'sellingCurrencyId') {
-      return (
-        <div key={field.name}>
-          <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            {field.label}
-          </label>
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              className={`flex-1 rounded-lg border bg-surface px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 ${
-                error ? 'border-danger' : 'border-border'
-              }`}
-              value={selectedSellingCurrencyName}
-              disabled
-              placeholder="ارز فروش را انتخاب کنید"
-            />
-            <button
-              type="button"
-              onClick={() => {
-                setPriceLookupConfig(currencyLookupConfig);
-                pricePendingOnChangeRef.current = onChange;
-                setPriceLookupTarget('sellingCurrency');
-                setPriceLookupOpen(true);
-              }}
-              className="flex h-9 items-center rounded-lg bg-primary px-3 text-sm font-medium text-white transition-colors hover:bg-primary/90"
-            >
-              انتخاب
-            </button>
-            {selectedSellingCurrencyId != null && (
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedSellingCurrencyId(null);
-                  setSelectedSellingCurrencyName('');
-                  onChange(null);
-                }}
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-secondary"
-              >
-                ×
-              </button>
-            )}
-          </div>
-          {error && <p className="mt-1 text-xs text-danger">{error}</p>}
-        </div>
-      );
-    }
-
     return null;
   };
 
@@ -853,12 +736,6 @@ export default function ContractsPage() {
     },
     { key: 'minimumQuantity', header: 'حداقل تعداد', render: (v) => formatPrice(v) },
     { key: 'maximumQuantity', header: 'حداکثر تعداد', render: (v) => formatPrice(v) },
-    { key: 'sellingPrice', header: 'قیمت فروش', render: (v) => formatPrice(v) },
-    {
-      key: 'sellingCurrency',
-      header: 'ارز فروش',
-      render: (v) => (v as { code?: string } | undefined)?.code ?? '',
-    },
     {
       key: 'isActive',
       header: 'فعال',
@@ -931,21 +808,14 @@ export default function ContractsPage() {
         <LookupDialog
           open={lookupOpen}
           config={lookupConfig}
-          selectedValue={
-            lookupConfig.title === 'شرکت' ? selectedCompanyId : selectedCurrencyId
-          }
+          selectedValue={selectedCompanyId}
           onSelect={(value, label) => {
             if (pendingOnChangeRef.current) {
               pendingOnChangeRef.current(value);
               pendingOnChangeRef.current = null;
             }
-            if (lookupConfig.title === 'شرکت') {
-              setSelectedCompanyId(value as number);
-              setSelectedCompanyName(label);
-            } else if (lookupConfig.title === 'ارز') {
-              setSelectedCurrencyId(value as number);
-              setSelectedCurrencyName(label);
-            }
+            setSelectedCompanyId(value as number);
+            setSelectedCompanyName(label);
             setLookupOpen(false);
           }}
           onClose={() => {
@@ -1099,9 +969,7 @@ export default function ContractsPage() {
           selectedValue={
             priceLookupTarget === 'deviceType'
               ? selectedDeviceTypeId
-              : priceLookupTarget === 'priceCurrency'
-                ? selectedPriceCurrencyId
-                : selectedSellingCurrencyId
+              : selectedPriceCurrencyId
           }
           onSelect={(value, label) => {
             if (pricePendingOnChangeRef.current) {
@@ -1114,9 +982,6 @@ export default function ContractsPage() {
             } else if (priceLookupTarget === 'priceCurrency') {
               setSelectedPriceCurrencyId(value as number);
               setSelectedPriceCurrencyName(label);
-            } else if (priceLookupTarget === 'sellingCurrency') {
-              setSelectedSellingCurrencyId(value as number);
-              setSelectedSellingCurrencyName(label);
             }
             setPriceLookupOpen(false);
           }}
