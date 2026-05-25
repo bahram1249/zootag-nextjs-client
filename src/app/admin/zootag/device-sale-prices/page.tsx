@@ -53,7 +53,7 @@ const currencyLookupConfig: LookupConfig = {
 const modalFields: FieldDef[] = [
   { name: 'deviceTypeId', label: 'نوع دستگاه', type: 'string', required: true },
   { name: 'currencyId', label: 'ارز', type: 'string', required: true },
-  { name: 'salePrice', label: 'قیمت فروش', type: 'number', required: true },
+  { name: 'salePrice', label: 'قیمت فروش', type: 'price', required: true },
   { name: 'validFrom', label: 'تاریخ شروع اعتبار', type: 'date', required: true },
   { name: 'validTo', label: 'تاریخ پایان اعتبار', type: 'date' },
 ];

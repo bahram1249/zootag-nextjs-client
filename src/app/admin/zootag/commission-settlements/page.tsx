@@ -48,7 +48,7 @@ const deviceSaleLookupConfig: LookupConfig = {
 const modalFields: FieldDef[] = [
   { name: 'marketerId', label: 'بازاریاب', type: 'string', required: true },
   { name: 'deviceSaleId', label: 'فروش دستگاه', type: 'string', required: true },
-  { name: 'amountIRR', label: 'مبلغ (ریال)', type: 'number', required: true },
+  { name: 'amountIRR', label: 'مبلغ (ریال)', type: 'price', required: true },
   { name: 'paymentDate', label: 'تاریخ پرداخت', type: 'date', required: true },
   { name: 'statusId', label: 'وضعیت', type: 'string' },
   { name: 'notes', label: 'یادداشت', type: 'string', placeholder: 'اختیاری' },

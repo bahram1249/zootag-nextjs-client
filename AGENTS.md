@@ -117,7 +117,7 @@ The API client uses this value as-is (no `/api` suffix appended). Include the fu
 A cohesive set of UI components with modern design. Import from `@/components/ui`:
 
 ```typescript
-import { Input, Textarea, Select, Badge, PersianDatePicker, PriceInput } from '@/components/ui';
+import { Input, Textarea, Select, Checkbox, Badge, PersianDatePicker, PriceInput } from '@/components/ui';
 ```
 
 ### Design Tokens
@@ -326,6 +326,42 @@ import { PriceInput } from '@/components/ui';
 - Strips non-numeric characters on input (except commas for grouping).
 - Displays formatted value (e.g., `1,234,567`) while storing raw number.
 - Uses `inputMode="numeric"` for mobile number pad.
+
+### Checkbox — `checkbox.tsx`
+
+A checkbox input with label, error, and helper text support.
+
+```typescript
+import { Checkbox } from '@/components/ui';
+```
+
+```typescript
+<Checkbox
+  label="فعال"
+  checked={isActive}
+  onChange={(e) => setIsActive(e.target.checked)}
+  error={errors.isActive}
+  helperText="وضعیت فعال یا غیرفعال"
+/>
+```
+
+**Props**:
+
+| Prop        | Type                    | Description                          |
+| ----------- | ----------------------- | ------------------------------------ |
+| `label`     | `string`                | Label displayed to the right of the checkbox |
+| `checked`   | `boolean`               | Checked state                        |
+| `onChange`  | `(e: React.ChangeEvent<HTMLInputElement>) => void` | Change handler |
+| `error`     | `string`                | Error message (shows in red)         |
+| `helperText`| `string`                | Helper text below (hidden if error)  |
+
+For use in `CrudModal` forms, use `type: 'boolean'` in the `FieldDef` — the modal renders the `Checkbox` component automatically:
+
+```typescript
+{ name: 'isActive', label: 'فعال', type: 'boolean' },
+```
+
+---
 
 ## API Client — `src/lib/api-client.ts`
 
