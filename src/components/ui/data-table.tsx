@@ -86,7 +86,7 @@ export function DataTable<T>({
   const currentPage = totalPages > 0 ? Math.floor(offset / limit) + 1 : 0;
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex min-w-0 flex-1 flex-col">
       {/* header */}
       {!hideHeader && (
         <div className="mb-4 flex items-center justify-between">
@@ -120,7 +120,7 @@ export function DataTable<T>({
       )}
 
       {/* table */}
-      <div className="flex-1 overflow-hidden rounded-xl border border-border bg-surface">
+      <div className="overflow-x-auto rounded-xl border border-border bg-surface">
         {loading ? (
           <div className="flex h-48 items-center justify-center">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -130,8 +130,7 @@ export function DataTable<T>({
             <p className="text-sm text-muted">نتیجه‌ای یافت نشد</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <table className="min-w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-surface-secondary">
                   {columns.map((col) => (
@@ -166,7 +165,6 @@ export function DataTable<T>({
                 ))}
               </tbody>
             </table>
-          </div>
         )}
       </div>
 

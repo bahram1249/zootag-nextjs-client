@@ -221,7 +221,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen">
       <Sidebar menus={menus} />
-      <main className="flex flex-1 flex-col bg-surface-secondary p-6">
+      <main className="flex min-w-0 flex-1 flex-col bg-surface-secondary p-6">
         {menusLoading ? (
           <div className="flex flex-1 items-center justify-center">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
