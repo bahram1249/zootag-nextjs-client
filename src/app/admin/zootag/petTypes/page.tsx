@@ -15,6 +15,7 @@ interface PetType {
 const modalFields: FieldDef[] = [
   { name: 'id', label: 'شناسه', type: 'number', required: true, placeholder: 'شناسه را وارد کنید' },
   { name: 'name', label: 'نام', type: 'string', required: true, minLength: 2, maxLength: 50, placeholder: 'نام نوع پت را وارد کنید' },
+  { name: 'isActive', label: 'فعال', type: 'boolean' },
 ];
 
 export default function PetTypesPage() {
@@ -44,6 +45,7 @@ export default function PetTypesPage() {
       const payload: Record<string, unknown> = {
         id: Number(values.id),
         name: values.name,
+        isActive: values.isActive,
       };
       if (modalMode === 'create') {
         await apiClient.post('/v1/api/zootag/admin/PetTypes', payload);

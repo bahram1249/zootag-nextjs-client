@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Input } from './input';
 import { Textarea } from './textarea';
 import { Select } from './select';
+import { Checkbox } from './checkbox';
 import { PersianDatePicker } from './persian-date-picker';
 import { PriceInput } from './price-input';
 
@@ -44,28 +45,6 @@ interface CrudModalProps {
   onClose: () => void;
   renderCustomField?: (field: FieldDef, value: unknown, onChange: (v: unknown) => void, error?: string) => ReactNode;
   children?: ReactNode;
-}
-
-function BooleanInput({
-  value,
-  onChange,
-  label,
-}: {
-  value: boolean;
-  onChange: (v: boolean) => void;
-  label: string;
-}) {
-  return (
-    <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-      <input
-        type="checkbox"
-        checked={value}
-        onChange={(e) => onChange(e.target.checked)}
-        className="h-4 w-4 rounded border-border text-primary focus:ring-primary/20"
-      />
-      {label}
-    </label>
-  );
 }
 
 export function CrudModal({
@@ -152,11 +131,11 @@ export function CrudModal({
 
       case 'boolean':
         return (
-          <BooleanInput
+          <Checkbox
             key={field.name}
             label={field.label}
-            value={Boolean(value)}
-            onChange={(v) => setValue(field.name, v)}
+            checked={Boolean(value)}
+            onChange={(e) => setValue(field.name, e.target.checked)}
           />
         );
 

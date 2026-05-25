@@ -17,6 +17,7 @@ interface PetBreed {
 const modalFields: FieldDef[] = [
   { name: 'name', label: 'نام نژاد', type: 'string', required: true, minLength: 2, maxLength: 50, placeholder: 'نام نژاد را وارد کنید' },
   { name: 'petTypeId', label: 'نوع پت', type: 'number', required: true },
+  { name: 'isActive', label: 'فعال', type: 'boolean' },
 ];
 
 export default function PetBreedsPage() {
@@ -63,6 +64,7 @@ export default function PetBreedsPage() {
       const payload: Record<string, unknown> = {
         name: values.name,
         petTypeId: selectedPetTypeId,
+        isActive: values.isActive,
       };
       if (modalMode === 'create') {
         await apiClient.post('/v1/api/zootag/admin/PetBreedes', payload);
