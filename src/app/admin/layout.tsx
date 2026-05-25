@@ -93,9 +93,34 @@ function MenuItem({ node, depth }: { node: MenuNode; depth: number }) {
   );
 }
 
+function filterMenus(nodes: MenuNode[], query: string): MenuNode[] {
+  const q = query.toLowerCase().trim();
+  if (!q) return nodes;
+  return nodes.filter((node) => {
+    if (node.title.toLowerCase().includes(q)) return true;
+    if (node.subMenus) {
+      const filteredChildren = node.subMenus.filter((c) =>
+        c.title.toLowerCase().includes(q),
+      );
+      if (filteredChildren.length > 0) {
+        node.subMenus = filteredChildren;
+        return true;
+      }
+    }
+    return false;
+  });
+}
+
 function Sidebar({ menus }: { menus: MenuNode[] }) {
   const { user, logout } = useAuth();
   const name = user?.firstname || user?.username || 'کاربر';
+  const [search, setSearch] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const filteredMenus = filterMenus(
+    menus.map((m) => ({ ...m, subMenus: m.subMenus ? [...m.subMenus] : undefined })),
+    search,
+  );
 
   return (
     <aside className="flex w-64 flex-col border-l border-border bg-surface">
@@ -123,12 +148,40 @@ function Sidebar({ menus }: { menus: MenuNode[] }) {
         </button>
       </div>
 
+      <div className="border-b border-border px-3 py-2">
+        <div className="relative">
+          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </span>
+          <input
+            ref={inputRef}
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="جستجوی منو..."
+            className="w-full rounded-lg border border-border bg-surface py-1.5 pr-9 text-sm text-zinc-900 placeholder:text-zinc-400 transition-colors focus:border-primary focus:outline-none dark:text-zinc-100 dark:placeholder:text-zinc-500"
+          />
+          {search && (
+            <button
+              onClick={() => { setSearch(''); inputRef.current?.focus(); }}
+              className="absolute left-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+      </div>
+
       <nav className="flex-1 overflow-y-auto p-3">
-        {menus.length === 0 && (
-          <p className="text-center text-sm text-muted">منویی یافت نشد</p>
+        {filteredMenus.length === 0 && (
+          <p className="text-center text-sm text-muted">نتیجه‌ای یافت نشد</p>
         )}
         <div className="space-y-1">
-          {menus.map((menu) => (
+          {filteredMenus.map((menu) => (
             <MenuItem key={menu.id} node={menu} depth={0} />
           ))}
         </div>

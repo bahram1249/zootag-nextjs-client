@@ -590,6 +590,39 @@ apiClient.get<MenuNode[]>('/v1/api/core/user/menus', { filter: { ignorePaging: t
 
 The response is an array of `MenuNode` objects with recursive `subMenus`.
 
+### Menu Icons
+
+The `MenuNode` type includes `icon: string` and `className: string` fields. These are set by the backend permission system and rendered by the sidebar.
+
+The sidebar uses the `Icon` component (`@/components/ui/icon`) to render icons:
+
+```tsx
+import { Icon } from '@/components/ui';
+
+// Renders the icon by identifier, falls back to a default circle
+<Icon icon={node.icon || 'circle'} size={18} />
+```
+
+**How it works:**
+- The backend stores an icon identifier (e.g. `'users'`, `'settings'`, `'database'`) in the `Menus.icon` column
+- The `Icon` component maps identifiers to inline SVG icons via `ICON_MAP` in `src/components/ui/icon.tsx`
+- When no icon is set (or identifier is unknown), the default `'circle'` icon is shown
+- To add a new icon, add an entry to the `ICON_MAP` object in `src/components/ui/icon.tsx`:
+  ```typescript
+  yourIconName: Svg('M...path data...'),
+  ```
+
+### Sidebar Search
+
+The sidebar has a built-in search input at the top of the nav section. Users can type to filter menus:
+
+- Matches both parent and child menu titles (case-insensitive)
+- When a child matches, the parent is shown with only matching children
+- Shows `"نتیجه‌ای یافت نشد"` when no results
+- Clear button (×) resets the search
+
+The search is implemented in `src/app/admin/layout.tsx` via the `filterMenus()` helper and local `search` state in the `Sidebar` component.
+
 ## CRUD Architecture
 
 Every admin page that has full CRUD (POST/PUT/DELETE) from the backend follows a consistent pattern:
