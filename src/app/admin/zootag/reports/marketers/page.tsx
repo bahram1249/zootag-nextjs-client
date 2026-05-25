@@ -44,6 +44,9 @@ const marketerLookupConfig: LookupConfig = {
 };
 
 export default function MarketerReportPage() {
+  useEffect(() => {
+    document.title = 'گزارش عملکرد بازاریاب‌ها | زوتگ';
+  }, []);
   const [performances, setPerformances] = useState<MarketerPerformance[]>([]);
   const [loading, setLoading] = useState(true);
 

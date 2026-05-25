@@ -103,6 +103,33 @@ export async function fetchData<T>(endpoint: string): Promise<T> {
 - **Utilities**: camelCase (e.g., `formatDate.ts`, `api-client.ts`)
 - **Types/Interfaces**: PascalCase (e.g., `UserProfile`, `ApiResponse<T>`)
 
+### Admin Page Titles
+
+Every admin page must set `document.title` to a unique, descriptive value. The `PageHeader` component automatically sets `document.title = "{title} | زوتگ"` — pages that don't use `PageHeader` must set it manually via `useEffect`.
+
+The `PageHeader` `title` and `DataTable` `title` must clearly identify the page, and not be shared across any other page. Use `breadcrumbs` to show the navigation path.
+
+```tsx
+<PageHeader
+  title="انواع پت"           // unique — no other page uses this title
+  description="مدیریت انواع پت"
+  breadcrumbs={[
+    { label: 'پنل مدیریت', href: '/admin' },
+    { label: 'انواع پت' },  // matches title in breadcrumb
+  ]}
+/>
+<DataTable
+  title="انواع پت"           // must match PageHeader title
+  hideHeader                // hide duplicate heading when PageHeader is used
+/>
+```
+
+- `PageHeader.title` and `DataTable.title` must match each other on the same page
+- The title must be unique across the entire admin
+- `breadcrumbs` last label should match the page title
+- Use `hideHeader` on DataTable when PageHeader is present (always for admin CRUD pages)
+- `CrudModal` titles should follow the pattern `افزودن <entity>` / `ویرایش <entity>`
+
 ## Environment Variables
 
 Required variables — add to `.env.local`:

@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 
 export interface BreadcrumbItem {
   label: string;
@@ -16,6 +16,9 @@ interface PageHeaderProps {
 }
 
 export function PageHeader({ title, description, breadcrumbs, children, variant = 'default' }: PageHeaderProps) {
+  useEffect(() => {
+    document.title = `${title} | زوتگ`;
+  }, [title]);
   const inner = (
     <>
       {breadcrumbs && breadcrumbs.length > 0 && (

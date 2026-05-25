@@ -30,6 +30,9 @@ interface RecentSale {
 }
 
 export default function ProfitabilityReportPage() {
+  useEffect(() => {
+    document.title = 'گزارش سودآوری | زوتگ';
+  }, []);
   const [summary, setSummary] = useState<DeviceSaleSummary | null>(null);
   const [recentSales, setRecentSales] = useState<RecentSale[]>([]);
   const [loading, setLoading] = useState(true);
