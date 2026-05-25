@@ -29,7 +29,7 @@ interface Device {
   inventoryStatusId?: number;
   inventoryStatus?: { id: number; name: string };
   saleId?: number;
-  sale?: { id: number; salePrice: number };
+  sale?: { id: number; salePrice: number; salePriceIRR: number; saleCurrency?: { id: number; code: string; name: string; symbol: string } };
 }
 
 const contractPeriodDevicePriceLookupConfig: LookupConfig = {
@@ -306,15 +306,25 @@ export default function DevicesPage() {
         const sale = v as { id?: number; salePrice?: number } | undefined;
         const r = row as Device;
         if (!r.saleId) return <span className="text-muted">—</span>;
+        const symbol = sale?.saleCurrency?.symbol ?? r.currency?.symbol ?? '';
         return (
           <Badge variant="primary" size="sm" icon={
             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           }>
-            {sale ? `${sale.id} (${formatPrice(sale.salePrice)})` : `#${r.saleId}`}
+            {sale ? `${formatPrice(sale.salePrice)} ${symbol}` : `#${r.saleId}`}
           </Badge>
         );
+      },
+    },
+    {
+      key: 'salePriceIRR',
+      header: 'فروش (ریال)',
+      render: (_v, row) => {
+        const r = row as Device;
+        if (!r.saleId || !r.sale?.salePriceIRR) return <span className="text-muted">—</span>;
+        return <span className="font-medium text-zinc-900 dark:text-zinc-100">{formatPrice(r.sale.salePriceIRR)}</span>;
       },
     },
     { key: 'purchaseDate', header: 'تاریخ خرید', render: (v) => formatPersianDate(v) },
