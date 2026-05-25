@@ -220,9 +220,9 @@ export default function MarketersPage() {
       header: 'فعال',
       render: (v) =>
         v ? (
-          <span className="text-success font-medium">فعال</span>
+          <Badge variant="success" size="sm" icon={<svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>}>فعال</Badge>
         ) : (
-          <span className="text-muted">غیرفعال</span>
+          <Badge variant="danger" size="sm" icon={<svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>}>غیرفعال</Badge>
         ),
     },
     {
@@ -280,7 +280,7 @@ export default function MarketersPage() {
       key: 'isActive',
       header: 'فعال',
       render: (v) =>
-        v ? <span className="text-success font-medium">فعال</span> : <span className="text-muted">غیرفعال</span>,
+        v ? <Badge variant="success" size="sm" icon={<svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>}>فعال</Badge> : <Badge variant="danger" size="sm" icon={<svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>}>غیرفعال</Badge>,
     },
     {
       key: 'actions',

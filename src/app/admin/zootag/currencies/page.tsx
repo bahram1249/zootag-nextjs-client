@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { DataTable, CrudModal, ConfirmDialog, PageHeader, OperationToolbar } from '@/components/ui';
+import { DataTable, CrudModal, ConfirmDialog, Badge, PageHeader, OperationToolbar } from '@/components/ui';
 import type { Column, FieldDef } from '@/components/ui';
 import { apiClient, ApiError } from '@/lib/api-client';
 import { formatPrice, formatPersianDate } from '@/lib/format';
@@ -91,9 +91,9 @@ export default function CurrenciesPage() {
       header: 'فعال',
       render: (v) =>
         v ? (
-          <span className="text-success font-medium">فعال</span>
+          <Badge variant="success" size="sm" icon={<svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>}>فعال</Badge>
         ) : (
-          <span className="text-muted">غیرفعال</span>
+          <Badge variant="danger" size="sm" icon={<svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>}>غیرفعال</Badge>
         ),
     },
     {

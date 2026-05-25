@@ -195,7 +195,7 @@ export default function DeviceSalesPage() {
         { key: 'id', header: 'شناسه' },
         { key: 'salePrice', header: 'قیمت', render: (v) => formatPrice(v) },
         { key: 'currency', header: 'ارز', render: (v) => (v as { code?: string })?.code ?? '' },
-        { key: 'isActive', header: 'فعال', render: (v) => (v ? 'بله' : 'خیر') },
+        { key: 'isActive', header: 'فعال', render: (v) => v ? <Badge variant="success" size="sm" icon={<svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>}>فعال</Badge> : <Badge variant="danger" size="sm" icon={<svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>}>غیرفعال</Badge> },
       ],
       formFields: [],
     });
