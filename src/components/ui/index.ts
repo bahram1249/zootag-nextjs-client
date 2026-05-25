@@ -16,3 +16,4 @@ export { PageHeader } from './page-header';
 export type { BreadcrumbItem } from './page-header';
 export { OperationToolbar } from './operation-toolbar';
 export type { OperationButton } from './operation-toolbar';
+export { Icon } from './icon';

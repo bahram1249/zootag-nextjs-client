@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { fetchMenus } from '@/lib/menus';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
+import { Icon } from '@/components/ui';
 import type { MenuNode } from '@/lib/auth-types';
 
 function toFrontendUrl(backendUrl: string | null): string {
@@ -66,9 +67,9 @@ function MenuItem({ node, depth }: { node: MenuNode; depth: number }) {
         }`}
         style={{ paddingRight: `${12 + depth * 16}px` }}
       >
-        {node.icon && (
-          <span className="flex h-5 w-5 items-center justify-center text-base">{node.icon}</span>
-        )}
+        <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+          <Icon icon={node.icon || 'circle'} size={18} />
+        </span>
         <span className="flex-1">{node.title}</span>
         {hasChildren && (
           <svg
