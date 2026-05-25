@@ -9,7 +9,7 @@ import { formatPrice, formatPersianDate } from '@/lib/format';
 interface DeviceSale {
   id: number;
   deviceId: number;
-  marketerId: number;
+  marketerId?: number;
   customerCompanyId?: number;
   saleDate: string;
   salePrice: number;
@@ -43,19 +43,6 @@ interface SalePreview {
   netProfitIRR: number;
 }
 
-const deviceLookupConfig: LookupConfig = {
-  endpoint: '/v1/api/zootag/admin/devices',
-  labelKey: 'serialNumber',
-  valueKey: 'id',
-  title: 'دستگاه',
-  columns: [
-    { key: 'id', header: 'شناسه' },
-    { key: 'serialNumber', header: 'سریال نمبر' },
-    { key: 'imei', header: 'IMEI' },
-  ],
-  formFields: [],
-};
-
 const marketerLookupConfig: LookupConfig = {
   endpoint: '/v1/api/zootag/admin/marketers',
   labelKey: 'fullName',
@@ -69,10 +56,23 @@ const marketerLookupConfig: LookupConfig = {
   formFields: [],
 };
 
+const deviceLookupConfig: LookupConfig = {
+  endpoint: '/v1/api/zootag/admin/devices/available',
+  labelKey: 'serialNumber',
+  valueKey: 'id',
+  title: 'دستگاه',
+  columns: [
+    { key: 'id', header: 'شناسه' },
+    { key: 'serialNumber', header: 'سریال نمبر' },
+    { key: 'imei', header: 'IMEI' },
+  ],
+  formFields: [],
+};
+
 const modalFields: FieldDef[] = [
+  { name: 'marketerId', label: 'بازاریاب', type: 'string' },
   { name: 'deviceId', label: 'دستگاه', type: 'string', required: true },
   { name: 'deviceSalePriceId', label: 'قیمت فروش', type: 'string', required: true },
-  { name: 'marketerId', label: 'بازاریاب', type: 'string', required: true },
   { name: 'saleDate', label: 'تاریخ فروش', type: 'date', required: true },
   { name: 'notes', label: 'یادداشت', type: 'string', placeholder: 'اختیاری' },
 ];
@@ -82,11 +82,11 @@ export default function DeviceSalesPage() {
   const [saving, setSaving] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  const [selectedMarketerId, setSelectedMarketerId] = useState<number | null>(null);
+  const [selectedMarketerName, setSelectedMarketerName] = useState('');
   const [selectedDeviceId, setSelectedDeviceId] = useState<number | null>(null);
   const [selectedDeviceName, setSelectedDeviceName] = useState('');
   const [selectedDeviceTypeId, setSelectedDeviceTypeId] = useState<number | null>(null);
-  const [selectedMarketerId, setSelectedMarketerId] = useState<number | null>(null);
-  const [selectedMarketerName, setSelectedMarketerName] = useState('');
   const [selectedDeviceSalePriceId, setSelectedDeviceSalePriceId] = useState<number | null>(null);
   const [selectedDeviceSalePriceLabel, setSelectedDeviceSalePriceLabel] = useState('');
   const [selectedSaleDate, setSelectedSaleDate] = useState<string>('');
@@ -96,8 +96,8 @@ export default function DeviceSalesPage() {
   const [previewLoading, setPreviewLoading] = useState(false);
   const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [deviceLookupOpen, setDeviceLookupOpen] = useState(false);
   const [marketerLookupOpen, setMarketerLookupOpen] = useState(false);
+  const [deviceLookupOpen, setDeviceLookupOpen] = useState(false);
   const [priceLookupOpen, setPriceLookupOpen] = useState(false);
   const [priceLookupConfig, setPriceLookupConfig] = useState<LookupConfig | null>(null);
   const pendingOnChangeRef = useRef<((v: unknown) => void) | null>(null);
@@ -117,7 +117,7 @@ export default function DeviceSalesPage() {
       previewTimerRef.current = null;
     }
 
-    if (!selectedDeviceId || !selectedDeviceSalePriceId || !selectedMarketerId || !selectedSaleDate) {
+    if (!selectedDeviceId || !selectedDeviceSalePriceId || !selectedSaleDate) {
       setPreview(null);
       return;
     }
@@ -125,14 +125,17 @@ export default function DeviceSalesPage() {
     setPreviewLoading(true);
     previewTimerRef.current = setTimeout(async () => {
       try {
-        const params = new URLSearchParams({
+        const params: Record<string, string> = {
           deviceId: String(selectedDeviceId),
           deviceSalePriceId: String(selectedDeviceSalePriceId),
-          marketerId: String(selectedMarketerId),
           saleDate: selectedSaleDate,
-        });
+        };
+        if (selectedMarketerId) {
+          params.marketerId = String(selectedMarketerId);
+        }
+        const qs = new URLSearchParams(params);
         const { result } = await apiClient.get<SalePreview>(
-          `/v1/api/zootag/admin/deviceSales/preview?${params}`,
+          `/v1/api/zootag/admin/deviceSales/preview?${qs}`,
         );
         setPreview(result);
       } catch {
@@ -150,11 +153,11 @@ export default function DeviceSalesPage() {
   }, [selectedDeviceId, selectedDeviceSalePriceId, selectedMarketerId, selectedSaleDate]);
 
   const handleCreate = () => {
+    setSelectedMarketerId(null);
+    setSelectedMarketerName('');
     setSelectedDeviceId(null);
     setSelectedDeviceName('');
     setSelectedDeviceTypeId(null);
-    setSelectedMarketerId(null);
-    setSelectedMarketerName('');
     setSelectedDeviceSalePriceId(null);
     setSelectedDeviceSalePriceLabel('');
     setModalOpen(true);
@@ -166,9 +169,10 @@ export default function DeviceSalesPage() {
       const payload: Record<string, unknown> = {
         ...values,
         deviceId: selectedDeviceId,
-        marketerId: selectedMarketerId,
         deviceSalePriceId: selectedDeviceSalePriceId,
+        marketerId: selectedMarketerId,
       };
+      if (!payload.marketerId) delete payload.marketerId;
       await apiClient.post('/v1/api/zootag/admin/deviceSales', payload);
       setModalOpen(false);
       setRefreshKey((k) => k + 1);
@@ -186,8 +190,12 @@ export default function DeviceSalesPage() {
     }
     pendingOnChangeRef.current = onChange;
     lookupFieldRef.current = 'deviceSalePriceId';
+    let endpoint = `/v1/api/zootag/admin/deviceSalePrices/effective?deviceTypeId=${selectedDeviceTypeId}`;
+    if (selectedMarketerId) {
+      endpoint += `&marketerId=${selectedMarketerId}`;
+    }
     setPriceLookupConfig({
-      endpoint: `/v1/api/zootag/admin/deviceSalePrices?deviceTypeId=${selectedDeviceTypeId}`,
+      endpoint,
       labelKey: 'salePrice',
       valueKey: 'id',
       title: 'قیمت فروش',
@@ -195,7 +203,16 @@ export default function DeviceSalesPage() {
         { key: 'id', header: 'شناسه' },
         { key: 'salePrice', header: 'قیمت', render: (v) => formatPrice(v) },
         { key: 'currency', header: 'ارز', render: (v) => (v as { code?: string })?.code ?? '' },
-        { key: 'isActive', header: 'فعال', render: (v) => v ? <Badge variant="success" size="sm" icon={<svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>}>فعال</Badge> : <Badge variant="danger" size="sm" icon={<svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>}>غیرفعال</Badge> },
+        {
+          key: 'priceType',
+          header: 'نوع قیمت',
+          render: (v) =>
+            v === 'marketer' ? (
+              <Badge variant="warning" size="sm">بازاریاب</Badge>
+            ) : (
+              <Badge variant="default" size="sm">پیش‌فرض</Badge>
+            ),
+        },
       ],
       formFields: [],
     });
@@ -208,6 +225,42 @@ export default function DeviceSalesPage() {
     onChange: (v: unknown) => void,
     error?: string,
   ) => {
+    if (field.name === 'marketerId') {
+      return (
+        <div key={field.name}>
+          <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            {field.label}
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              className={`flex-1 rounded-lg border bg-surface px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 ${error ? 'border-danger' : 'border-border'}`}
+              value={selectedMarketerName}
+              disabled
+              placeholder="اختیاری - بازاریاب را انتخاب کنید"
+            />
+            <button
+              type="button"
+              onClick={() => { lookupFieldRef.current = 'marketer'; pendingOnChangeRef.current = onChange; setMarketerLookupOpen(true); }}
+              className="flex h-9 items-center rounded-lg bg-primary px-3 text-sm font-medium text-white transition-colors hover:bg-primary/90"
+            >
+              انتخاب
+            </button>
+            {selectedMarketerId != null && (
+              <button
+                type="button"
+                onClick={() => { setSelectedMarketerId(null); setSelectedMarketerName(''); onChange(null); }}
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-secondary"
+              >
+                ×
+              </button>
+            )}
+          </div>
+          {error && <p className="mt-1 text-xs text-danger">{error}</p>}
+        </div>
+      );
+    }
+
     if (field.name === 'deviceId') {
       return (
         <div key={field.name}>
@@ -280,42 +333,6 @@ export default function DeviceSalesPage() {
       );
     }
 
-    if (field.name === 'marketerId') {
-      return (
-        <div key={field.name}>
-          <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            {field.label} <span className="text-danger">*</span>
-          </label>
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              className={`flex-1 rounded-lg border bg-surface px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 ${error ? 'border-danger' : 'border-border'}`}
-              value={selectedMarketerName}
-              disabled
-              placeholder="بازاریاب را انتخاب کنید"
-            />
-            <button
-              type="button"
-              onClick={() => { lookupFieldRef.current = 'marketer'; pendingOnChangeRef.current = onChange; setMarketerLookupOpen(true); }}
-              className="flex h-9 items-center rounded-lg bg-primary px-3 text-sm font-medium text-white transition-colors hover:bg-primary/90"
-            >
-              انتخاب
-            </button>
-            {selectedMarketerId != null && (
-              <button
-                type="button"
-                onClick={() => { setSelectedMarketerId(null); setSelectedMarketerName(''); onChange(null); }}
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-secondary"
-              >
-                ×
-              </button>
-            )}
-          </div>
-          {error && <p className="mt-1 text-xs text-danger">{error}</p>}
-        </div>
-      );
-    }
-
     if (field.name === 'saleDate') {
       return (
         <div key={field.name}>
@@ -347,7 +364,7 @@ export default function DeviceSalesPage() {
     {
       key: 'marketer',
       header: 'بازاریاب',
-      render: (v) => (v as { fullName?: string } | undefined)?.fullName ?? '',
+      render: (v) => (v as { fullName?: string } | undefined)?.fullName ?? '—',
     },
     { key: 'saleDate', header: 'تاریخ فروش', render: (v) => formatPersianDate(v) },
     { key: 'salePrice', header: 'قیمت فروش', render: (v) => formatPrice(v) },
@@ -439,26 +456,26 @@ export default function DeviceSalesPage() {
                 <span className="text-muted">سود ناخالص:</span>
                 <span className="font-medium text-success">{formatPrice(preview.grossProfitIRR)}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted">نوع کمیسیون:</span>
-                <span className="font-medium text-zinc-800 dark:text-zinc-200">
-                  {preview.commissionType ? (
-                    <Badge variant="info" size="sm">{preview.commissionType.name}</Badge>
-                  ) : (
-                    '—'
-                  )}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted">مقدار کمیسیون:</span>
-                <span className="font-medium text-zinc-800 dark:text-zinc-200">
-                  {preview.commissionTypeId === 1 ? `${preview.commissionValue}%` : formatPrice(preview.commissionValue)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted">مبلغ کمیسیون:</span>
-                <span className="font-medium text-warning">{formatPrice(preview.commissionAmountIRR)}</span>
-              </div>
+              {preview.commissionType && (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-muted">نوع کمیسیون:</span>
+                    <span className="font-medium text-zinc-800 dark:text-zinc-200">
+                      <Badge variant="info" size="sm">{preview.commissionType.name}</Badge>
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted">مقدار کمیسیون:</span>
+                    <span className="font-medium text-zinc-800 dark:text-zinc-200">
+                      {preview.commissionTypeId === 1 ? `${preview.commissionValue}%` : formatPrice(preview.commissionValue)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted">مبلغ کمیسیون:</span>
+                    <span className="font-medium text-warning">{formatPrice(preview.commissionAmountIRR)}</span>
+                  </div>
+                </>
+              )}
               <div className="flex justify-between border-t border-border pt-1">
                 <span className="font-semibold text-muted">سود خالص:</span>
                 <span className="font-semibold text-primary">{formatPrice(preview.netProfitIRR)}</span>
@@ -467,6 +484,21 @@ export default function DeviceSalesPage() {
           </div>
         )}
       </CrudModal>
+      <LookupDialog
+        open={marketerLookupOpen}
+        config={marketerLookupConfig}
+        selectedValue={selectedMarketerId}
+        onSelect={(value, label) => {
+          if (pendingOnChangeRef.current) {
+            pendingOnChangeRef.current(value);
+            pendingOnChangeRef.current = null;
+          }
+          setSelectedMarketerId(value as number);
+          setSelectedMarketerName(label);
+          setMarketerLookupOpen(false);
+        }}
+        onClose={() => { pendingOnChangeRef.current = null; setMarketerLookupOpen(false); }}
+      />
       <LookupDialog
         open={deviceLookupOpen}
         config={deviceLookupConfig}
@@ -500,21 +532,6 @@ export default function DeviceSalesPage() {
           onClose={() => { pendingOnChangeRef.current = null; setPriceLookupOpen(false); }}
         />
       )}
-      <LookupDialog
-        open={marketerLookupOpen}
-        config={marketerLookupConfig}
-        selectedValue={selectedMarketerId}
-        onSelect={(value, label) => {
-          if (pendingOnChangeRef.current) {
-            pendingOnChangeRef.current(value);
-            pendingOnChangeRef.current = null;
-          }
-          setSelectedMarketerId(value as number);
-          setSelectedMarketerName(label);
-          setMarketerLookupOpen(false);
-        }}
-        onClose={() => { pendingOnChangeRef.current = null; setMarketerLookupOpen(false); }}
-      />
     </div>
   );
 }
