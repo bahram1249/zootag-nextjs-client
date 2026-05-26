@@ -9,6 +9,8 @@ export interface Column<T> {
   render?: (value: unknown, row: T) => ReactNode;
 }
 
+const PAGE_SIZE_OPTIONS = [5, 10, 20, 50, 100];
+
 interface DataTableProps<T> {
   columns: Column<T>[];
   apiEndpoint: string;
@@ -36,7 +38,9 @@ export function DataTable<T>({
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [offset, setOffset] = useState(0);
-  const limit = defaultLimit;
+  const [limit, setLimit] = useState(defaultLimit);
+  const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('DESC');
+  const orderBy = 'id';
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -58,6 +62,8 @@ export function DataTable<T>({
     } else {
       params.limit = limit;
       params.offset = offset;
+      params.orderBy = orderBy;
+      params.sortOrder = sortOrder;
       if (debouncedSearch) params.search = debouncedSearch;
     }
 
@@ -82,7 +88,16 @@ export function DataTable<T>({
     return () => {
       cancelled = true;
     };
-  }, [apiEndpoint, limit, offset, debouncedSearch, ignorePaging, extraParams]);
+  }, [apiEndpoint, limit, offset, debouncedSearch, ignorePaging, extraParams, orderBy, sortOrder]);
+
+  const handleLimitChange = (newLimit: number) => {
+    setLimit(newLimit);
+    setOffset(0);
+  };
+
+  const toggleSortOrder = () => {
+    setSortOrder((prev) => (prev === 'ASC' ? 'DESC' : 'ASC'));
+  };
 
   const totalPages = total > 0 ? Math.ceil(total / limit) : 0;
   const currentPage = totalPages > 0 ? Math.floor(offset / limit) + 1 : 0;
@@ -173,9 +188,34 @@ export function DataTable<T>({
       {/* pagination — only when paging is enabled and there's data */}
       {!ignorePaging && totalPages > 0 && (
         <div className="mt-3 flex items-center justify-between text-sm">
-          <p className="text-muted">
-            {`${Math.min(offset + 1, total)}-${Math.min(offset + limit, total)} از ${total}`}
-          </p>
+          <div className="flex items-center gap-3">
+            <p className="text-muted">
+              {`${Math.min(offset + 1, total)}-${Math.min(offset + limit, total)} از ${total}`}
+            </p>
+            <select
+              value={limit}
+              onChange={(e) => handleLimitChange(Number(e.target.value))}
+              className="h-8 rounded-lg border border-border bg-surface px-2 text-xs text-muted outline-none transition-colors focus:border-primary dark:bg-zinc-800"
+            >
+              {PAGE_SIZE_OPTIONS.map((size) => (
+                <option key={size} value={size}>
+                  {size} عدد
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={toggleSortOrder}
+              className="flex h-8 items-center gap-1 rounded-lg border border-border bg-surface px-2 text-xs text-muted transition-colors hover:bg-surface-secondary"
+            >
+              {sortOrder === 'DESC' ? 'جدیدترین' : 'قدیمی‌ترین'}
+              <svg
+                className={`h-3.5 w-3.5 transition-transform ${sortOrder === 'ASC' ? 'rotate-180' : ''}`}
+                fill="none" viewBox="0 0 24 24" stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+              </svg>
+            </button>
+          </div>
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => setOffset((p) => Math.max(0, p - limit))}
