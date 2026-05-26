@@ -39,8 +39,8 @@ export function DataTable<T>({
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [offset, setOffset] = useState(0);
   const [limit, setLimit] = useState(defaultLimit);
+  const [orderBy, setOrderBy] = useState('id');
   const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('DESC');
-  const orderBy = 'id';
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -90,13 +90,20 @@ export function DataTable<T>({
     };
   }, [apiEndpoint, limit, offset, debouncedSearch, ignorePaging, extraParams, orderBy, sortOrder]);
 
+  const handleSort = (colKey: string) => {
+    if (colKey === 'actions') return;
+    setOffset(0);
+    if (orderBy === colKey) {
+      setSortOrder((prev) => (prev === 'ASC' ? 'DESC' : 'ASC'));
+    } else {
+      setOrderBy(colKey);
+      setSortOrder('DESC');
+    }
+  };
+
   const handleLimitChange = (newLimit: number) => {
     setLimit(newLimit);
     setOffset(0);
-  };
-
-  const toggleSortOrder = () => {
-    setSortOrder((prev) => (prev === 'ASC' ? 'DESC' : 'ASC'));
   };
 
   const totalPages = total > 0 ? Math.ceil(total / limit) : 0;
@@ -150,14 +157,30 @@ export function DataTable<T>({
           <table className="min-w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-surface-secondary">
-                  {columns.map((col) => (
-                    <th
-                      key={col.key}
-                      className="whitespace-nowrap px-4 py-3 text-right text-xs font-medium text-muted"
-                    >
-                      {col.header}
-                    </th>
-                  ))}
+                  {columns.map((col) => {
+                    const isSorted = orderBy === col.key;
+                    return (
+                      <th
+                        key={col.key}
+                        onClick={() => handleSort(col.key)}
+                        className={`whitespace-nowrap px-4 py-3 text-right text-xs font-medium transition-colors ${
+                          col.key === 'actions' ? '' : 'cursor-pointer hover:text-zinc-900 dark:hover:text-zinc-100'
+                        } ${isSorted ? 'text-zinc-900 dark:text-zinc-100' : 'text-muted'}`}
+                      >
+                        <span className="inline-flex items-center gap-1">
+                          {col.header}
+                          {isSorted && (
+                            <svg
+                              className={`h-3 w-3 transition-transform ${sortOrder === 'ASC' ? 'rotate-180' : ''}`}
+                              fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                            </svg>
+                          )}
+                        </span>
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody>
@@ -203,18 +226,6 @@ export function DataTable<T>({
                 </option>
               ))}
             </select>
-            <button
-              onClick={toggleSortOrder}
-              className="flex h-8 items-center gap-1 rounded-lg border border-border bg-surface px-2 text-xs text-muted transition-colors hover:bg-surface-secondary"
-            >
-              {sortOrder === 'DESC' ? 'جدیدترین' : 'قدیمی‌ترین'}
-              <svg
-                className={`h-3.5 w-3.5 transition-transform ${sortOrder === 'ASC' ? 'rotate-180' : ''}`}
-                fill="none" viewBox="0 0 24 24" stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-              </svg>
-            </button>
           </div>
           <div className="flex items-center gap-1.5">
             <button
