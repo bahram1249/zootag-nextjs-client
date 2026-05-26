@@ -1,10 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
-import { DataTable, CrudModal } from '@/components/ui';
+import { DataTable, CrudModal, Badge } from '@/components/ui';
 import type { Column, FieldDef } from '@/components/ui';
 import { apiClient, ApiError } from '@/lib/api-client';
+
+interface UserRole {
+  id: number;
+  roleName: string;
+  static_id?: number;
+}
 
 interface User {
   id: number;
@@ -13,7 +19,13 @@ interface User {
   lastname: string;
   email?: string;
   phoneNumber?: string;
-  // roles: number[] — managed via role management page
+  roles?: UserRole[];
+}
+
+interface Role {
+  id: number;
+  roleName: string;
+  static_id?: number;
 }
 
 const modalFields: FieldDef[] = [
@@ -22,7 +34,6 @@ const modalFields: FieldDef[] = [
   { name: 'lastname', label: 'نام خانوادگی', type: 'string', required: true, minLength: 2, maxLength: 128, placeholder: 'نام خانوادگی را وارد کنید' },
   { name: 'email', label: 'ایمیل', type: 'string', required: false, placeholder: 'ایمیل را وارد کنید' },
   { name: 'phoneNumber', label: 'تلفن', type: 'string', required: false, placeholder: 'شماره تلفن را وارد کنید' },
-  // roles field omitted — assign roles via the role management page
 ];
 
 export default function UsersPage() {
@@ -32,25 +43,45 @@ export default function UsersPage() {
   const [saving, setSaving] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  const [allRoles, setAllRoles] = useState<Role[]>([]);
+  const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([]);
+
+  useEffect(() => {
+    if (!modalOpen) return;
+    apiClient
+      .get<Role[]>('/v1/api/core/admin/roles', { ignorePaging: true })
+      .then(({ result }) => setAllRoles(result))
+      .catch(console.error);
+  }, [modalOpen]);
+
   const handleCreate = () => {
     setModalMode('create');
     setSelected(null);
+    setSelectedRoleIds([]);
     setModalOpen(true);
   };
 
   const handleEdit = (row: User) => {
     setModalMode('edit');
     setSelected(row);
+    setSelectedRoleIds(row.roles?.map((r) => r.id) ?? []);
     setModalOpen(true);
+  };
+
+  const toggleRole = (roleId: number) => {
+    setSelectedRoleIds((prev) =>
+      prev.includes(roleId) ? prev.filter((id) => id !== roleId) : [...prev, roleId],
+    );
   };
 
   const handleSave = async (values: Record<string, unknown>) => {
     setSaving(true);
     try {
+      const payload = { ...values, roles: selectedRoleIds };
       if (modalMode === 'create') {
-        await apiClient.post('/v1/api/core/admin/users', values);
+        await apiClient.post('/v1/api/core/admin/users', payload);
       } else {
-        await apiClient.put(`/v1/api/core/admin/users/${selected!.id}`, values);
+        await apiClient.put(`/v1/api/core/admin/users/${selected!.id}`, payload);
       }
       setModalOpen(false);
       setRefreshKey((k) => k + 1);
@@ -69,6 +100,21 @@ export default function UsersPage() {
     { key: 'lastname', header: 'نام خانوادگی' },
     { key: 'email', header: 'ایمیل' },
     { key: 'phoneNumber', header: 'تلفن' },
+    {
+      key: 'roles',
+      header: 'نقش‌ها',
+      render: (_v, row) => (
+        <div className="flex flex-wrap gap-1">
+          {row.roles?.length
+            ? row.roles.map((role) => (
+                <Badge key={role.id} variant="primary" size="sm">
+                  {role.roleName}
+                </Badge>
+              ))
+            : '—'}
+        </div>
+      ),
+    },
     {
       key: 'actions',
       header: 'عملیات',
@@ -114,7 +160,34 @@ export default function UsersPage() {
         loading={saving}
         onSave={handleSave}
         onClose={() => setModalOpen(false)}
-      />
+      >
+        {allRoles.length > 0 && (
+          <fieldset className="flex flex-col gap-2 rounded-lg border border-border p-3">
+            <legend className="px-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              نقش‌ها
+            </legend>
+            <div className="flex flex-wrap gap-x-6 gap-y-2">
+              {allRoles.map((role) => {
+                const checked = selectedRoleIds.includes(role.id);
+                return (
+                  <label
+                    key={role.id}
+                    className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleRole(role.id)}
+                      className="h-4 w-4 rounded border-border accent-primary"
+                    />
+                    {role.roleName}
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+        )}
+      </CrudModal>
     </div>
   );
 }
