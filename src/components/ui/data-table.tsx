@@ -17,6 +17,7 @@ interface DataTableProps<T> {
   defaultLimit?: number;
   ignorePaging?: boolean;
   hideHeader?: boolean;
+  extraParams?: Record<string, unknown>;
 }
 
 export function DataTable<T>({
@@ -27,6 +28,7 @@ export function DataTable<T>({
   defaultLimit = 10,
   ignorePaging = false,
   hideHeader = false,
+  extraParams,
 }: DataTableProps<T>) {
   const [data, setData] = useState<T[]>([]);
   const [total, setTotal] = useState(0);
@@ -50,7 +52,7 @@ export function DataTable<T>({
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
 
-    const params: Record<string, unknown> = {};
+    const params: Record<string, unknown> = { ...extraParams };
     if (ignorePaging) {
       params.ignorePaging = true;
     } else {
@@ -80,7 +82,7 @@ export function DataTable<T>({
     return () => {
       cancelled = true;
     };
-  }, [apiEndpoint, limit, offset, debouncedSearch, ignorePaging]);
+  }, [apiEndpoint, limit, offset, debouncedSearch, ignorePaging, extraParams]);
 
   const totalPages = total > 0 ? Math.ceil(total / limit) : 0;
   const currentPage = totalPages > 0 ? Math.floor(offset / limit) + 1 : 0;

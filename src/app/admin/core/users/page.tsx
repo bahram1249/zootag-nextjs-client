@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-import { DataTable, CrudModal, Badge } from '@/components/ui';
+import { DataTable, CrudModal, Badge, PageHeader, OperationToolbar } from '@/components/ui';
 import type { Column, FieldDef } from '@/components/ui';
 import { apiClient, ApiError } from '@/lib/api-client';
 
@@ -135,21 +135,38 @@ export default function UsersPage() {
 
   return (
     <div>
-      <button
-        onClick={handleCreate}
-        className="mb-4 flex h-9 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-medium text-white transition-colors hover:bg-primary/90"
+      <PageHeader
+        variant="card"
+        title="کاربران"
+        description="مدیریت کاربران سیستم"
+        breadcrumbs={[
+          { label: 'پنل مدیریت', href: '/admin' },
+          { label: 'کاربران' },
+        ]}
       >
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-        </svg>
-        افزودن
-      </button>
+        <OperationToolbar
+          buttons={[
+            {
+              key: 'create',
+              label: 'افزودن کاربر',
+              icon: (
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              ),
+              variant: 'primary',
+              onClick: handleCreate,
+            },
+          ]}
+        />
+      </PageHeader>
       <DataTable
         key={refreshKey}
         columns={columns}
         apiEndpoint="/v1/api/core/admin/users"
         title="کاربران"
         description="مدیریت کاربران سیستم"
+        hideHeader
       />
       <CrudModal
         open={modalOpen}
