@@ -20,6 +20,8 @@ interface DataTableProps<T> {
   ignorePaging?: boolean;
   hideHeader?: boolean;
   extraParams?: Record<string, unknown>;
+  expandable?: boolean;
+  expandableKey?: string;
 }
 
 export function DataTable<T>({
@@ -31,6 +33,8 @@ export function DataTable<T>({
   ignorePaging = false,
   hideHeader = false,
   extraParams,
+  expandable = false,
+  expandableKey = 'subMenus',
 }: DataTableProps<T>) {
   const [data, setData] = useState<T[]>([]);
   const [total, setTotal] = useState(0);
@@ -41,6 +45,25 @@ export function DataTable<T>({
   const [limit, setLimit] = useState(defaultLimit);
   const [orderBy, setOrderBy] = useState('id');
   const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('DESC');
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+
+  const toggleExpand = (idx: number) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx);
+      else next.add(idx);
+      return next;
+    });
+  };
+
+  const hasChildren = (row: T) => {
+    const children = (row as Record<string, unknown>)[expandableKey];
+    return Array.isArray(children) && children.length > 0;
+  };
+
+  const getChildren = (row: T) => {
+    return (row as Record<string, unknown>)[expandableKey] as T[] | undefined;
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -91,7 +114,8 @@ export function DataTable<T>({
   }, [apiEndpoint, limit, offset, debouncedSearch, ignorePaging, extraParams, orderBy, sortOrder]);
 
   const handleSort = (colKey: string) => {
-    if (colKey === 'actions') return;
+    const col = columns.find((c) => c.key === colKey);
+    if (!col || col.render) return;
     setOffset(0);
     if (orderBy === colKey) {
       setSortOrder((prev) => (prev === 'ASC' ? 'DESC' : 'ASC'));
@@ -157,6 +181,7 @@ export function DataTable<T>({
           <table className="min-w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-surface-secondary">
+                  {expandable && <th key="__expand" className="w-10 px-4 py-3" />}
                   {columns.map((col) => {
                     const isSorted = orderBy === col.key;
                     return (
@@ -164,7 +189,7 @@ export function DataTable<T>({
                         key={col.key}
                         onClick={() => handleSort(col.key)}
                         className={`whitespace-nowrap px-4 py-3 text-right text-xs font-medium transition-colors ${
-                          col.key === 'actions' ? '' : 'cursor-pointer hover:text-zinc-900 dark:hover:text-zinc-100'
+                          col.render ? '' : 'cursor-pointer hover:text-zinc-900 dark:hover:text-zinc-100'
                         } ${isSorted ? 'text-zinc-900 dark:text-zinc-100' : 'text-muted'}`}
                       >
                         <span className="inline-flex items-center gap-1">
@@ -184,25 +209,78 @@ export function DataTable<T>({
                 </tr>
               </thead>
               <tbody>
-                {data.map((row, i) => (
-                  <tr
-                    key={i}
-                    className="border-b border-border transition-colors last:border-0 hover:bg-surface-secondary/50"
-                  >
-                    {columns.map((col) => {
-                      const cellValue = (row as Record<string, unknown>)[col.key];
-                      return (
-                        <td key={col.key} className="whitespace-nowrap px-4 py-3 text-zinc-900 dark:text-zinc-100">
-                          {col.render
-                            ? col.render(cellValue, row)
-                            : cellValue != null
-                              ? String(cellValue)
-                              : '—'}
+                {data.flatMap((row, i) => {
+                  const isExpanded = expandedRows.has(i);
+                  const hasCh = hasChildren(row);
+
+                  const rowEl = (
+                    <tr
+                      key={i}
+                      className="border-b border-border transition-colors last:border-0 hover:bg-surface-secondary/50"
+                    >
+                      {expandable && (
+                        <td className="w-10 px-4 py-3">
+                          {hasCh && (
+                            <button
+                              onClick={() => toggleExpand(i)}
+                              className="flex h-5 w-5 items-center justify-center rounded text-muted hover:bg-surface-secondary"
+                            >
+                              <svg
+                                className={`h-3.5 w-3.5 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                                fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                            </button>
+                          )}
                         </td>
-                      );
-                    })}
-                  </tr>
-                ))}
+                      )}
+                      {columns.map((col) => {
+                        const cellValue = (row as Record<string, unknown>)[col.key];
+                        return (
+                          <td key={col.key} className="whitespace-nowrap px-4 py-3 text-zinc-900 dark:text-zinc-100">
+                            {col.render
+                              ? col.render(cellValue, row)
+                              : cellValue != null
+                                ? String(cellValue)
+                                : '—'}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+
+                  if (isExpanded && hasCh) {
+                    return [
+                      rowEl,
+                      ...getChildren(row)!.map((child, ci) => (
+                        <tr
+                          key={`${i}-${ci}`}
+                          className="border-b border-border bg-surface-secondary/30 transition-colors last:border-0"
+                        >
+                          {expandable && <td className="w-10 px-4 py-3" />}
+                          {columns.map((col) => {
+                            const cellValue = (child as Record<string, unknown>)[col.key];
+                            return (
+                              <td key={col.key} className="whitespace-nowrap px-4 py-3 text-zinc-900 dark:text-zinc-100">
+                                <span className="flex items-center gap-1">
+                                  <span className="text-xs text-muted">└</span>
+                                  {col.render
+                                    ? col.render(cellValue, child)
+                                    : cellValue != null
+                                      ? String(cellValue)
+                                      : '—'}
+                                </span>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      )),
+                    ];
+                  }
+
+                  return [rowEl];
+                })}
               </tbody>
             </table>
         )}
