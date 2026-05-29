@@ -4,7 +4,9 @@ import { useState } from 'react';
 
 import { DataTable, CrudModal, Icon, Input, PageHeader, OperationToolbar, Badge } from '@/components/ui';
 import type { Column, FieldDef } from '@/components/ui';
-import { apiClient, ApiError } from '@/lib/api-client';
+import { apiClient } from '@/lib/api-client';
+import { getErrorMessage } from '@/lib/error-handler';
+import { useNotification } from '@/contexts/notification-context';
 
 interface Menu {
   id: number;
@@ -26,6 +28,7 @@ const modalFields: FieldDef[] = [
 ];
 
 export default function MenusPage() {
+  const { showError } = useNotification();
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [selected, setSelected] = useState<Menu | null>(null);
@@ -56,8 +59,7 @@ export default function MenusPage() {
       setModalOpen(false);
       setRefreshKey((k) => k + 1);
     } catch (e) {
-      console.error(e);
-      if (e instanceof ApiError) alert(e.message);
+      showError(getErrorMessage(e));
     } finally {
       setSaving(false);
     }
@@ -172,12 +174,12 @@ export default function MenusPage() {
                   error={error}
                   placeholder={field.placeholder}
                 />
-                {value && String(value).trim() && (
+                {value && String(value).trim() ? (
                   <div className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground">
                     <span>پیش‌نمایش:</span>
                     <Icon icon={String(value)} size={20} />
                   </div>
-                )}
+                ) : null}
               </div>
             );
           }

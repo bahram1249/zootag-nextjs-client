@@ -3,8 +3,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { DataTable, CrudModal, LookupDialog, Badge, PersianDatePicker, PageHeader, OperationToolbar } from '@/components/ui';
 import type { Column, FieldDef, LookupConfig } from '@/components/ui';
-import { apiClient, ApiError } from '@/lib/api-client';
+import { apiClient } from '@/lib/api-client';
 import { formatPrice, formatPersianDate } from '@/lib/format';
+import { getErrorMessage } from '@/lib/error-handler';
+import { useNotification } from '@/contexts/notification-context';
 
 interface DeviceSale {
   id: number;
@@ -78,6 +80,7 @@ const modalFields: FieldDef[] = [
 ];
 
 export default function DeviceSalesPage() {
+  const { showError } = useNotification();
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -177,7 +180,7 @@ export default function DeviceSalesPage() {
       setModalOpen(false);
       setRefreshKey((k) => k + 1);
     } catch (e) {
-      if (e instanceof ApiError) alert(e.message);
+      showError(getErrorMessage(e));
     } finally {
       setSaving(false);
     }

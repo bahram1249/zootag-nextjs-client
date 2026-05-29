@@ -547,23 +547,57 @@ const isAvailable = await checkUsername('admin');
 
 ### Error Handling
 
-On non-2xx responses, the client throws an `ApiError`:
+On non-2xx responses or network errors, `apiClient` throws an `ApiError`. Use the centralized error utilities instead of raw `alert()`:
 
 ```typescript
-import { ApiError } from '@/lib/api-client';
+import { useNotification } from '@/contexts/notification-context';
+import { getErrorMessage } from '@/lib/error-handler';
+
+const { showError } = useNotification();
 
 try {
-  const res = await apiClient.get<Manufacturer[]>('/v1/api/zootag/admin/manufacturers');
-  // res.result is typed as Manufacturer[]
-  // res.total is the count
+  const { result } = await apiClient.get<Manufacturer[]>('/v1/api/zootag/admin/manufacturers');
 } catch (error) {
-  if (error instanceof ApiError) {
-    console.error(error.statusCode); // 404, 400, etc.
-    console.error(error.message);    // "Manufacturer not found"
-    console.error(error.errors);     // ["Manufacturer not found"]
-  }
+  showError(getErrorMessage(error));
 }
 ```
+
+The `getErrorMessage()` utility handles all error types and returns user-friendly Persian messages:
+
+| Error Type | Example Message |
+|---|---|
+| Network error (backend down) | `خطا در ارتباط با سرور. لطفاً اتصال خود را بررسی کنید.` |
+| 401 | Shows backend message or `لطفاً مجدداً وارد شوید` |
+| 403 | Shows backend message or `شما دسترسی لازم را ندارید` |
+| 404 | Shows backend message or `مورد درخواستی یافت نشد` |
+| 5xx | Shows backend message or `خطای داخلی سرور` |
+| Validation (4xx with errors array) | Messages joined with ` - ` |
+| Unknown errors | `خطای نامشخصی رخ داد` |
+
+### Toast Notification
+
+The app has a global toast notification system available via `useNotification()`:
+
+```typescript
+const { showError, showSuccess, showWarning, showInfo } = useNotification();
+showSuccess('عملیات با موفقیت انجام شد');
+showWarning('این عملیات قابل برگشت نیست');
+```
+
+Toasts auto-dismiss: errors after 8s, others after 5s. The `NotificationProvider` is already wired in `AuthClientLayout` — no setup needed.
+
+### DataTable Error State
+
+`DataTable` shows an inline error icon + message when API fetch fails (no toast needed for list fetches).
+
+### Rule for Agents
+
+Every new page/component that calls `apiClient` MUST:
+1. Import `useNotification` from `@/contexts/notification-context`
+2. Import `getErrorMessage` from `@/lib/error-handler`
+3. Call `showError(getErrorMessage(e))` in every `catch` block
+4. Never use `alert()` for API errors
+5. Never silently swallow errors with empty `.catch()` or bare `console.error(e)`
 
 ### Usage Examples
 

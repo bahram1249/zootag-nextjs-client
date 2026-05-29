@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui';
 import { apiClient } from '@/lib/api-client';
+import { getErrorMessage } from '@/lib/error-handler';
+import { useNotification } from '@/contexts/notification-context';
 import { formatPrice } from '@/lib/format';
 
 interface DeviceSaleSummary {
@@ -30,6 +32,7 @@ interface RecentSale {
 }
 
 export default function ProfitabilityReportPage() {
+  const { showError } = useNotification();
   useEffect(() => {
     document.title = 'گزارش سودآوری | زوتگ';
   }, []);
@@ -69,7 +72,7 @@ export default function ProfitabilityReportPage() {
 
         setRecentSales(sales.slice(0, 20));
       } catch (e) {
-        console.error(e);
+        showError(getErrorMessage(e));
       } finally {
         setLoading(false);
       }

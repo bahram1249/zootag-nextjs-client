@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
+import { useNotification } from '@/contexts/notification-context';
+import { getErrorMessage } from '@/lib/error-handler';
 import { fetchMenus } from '@/lib/menus';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { Icon } from '@/components/ui';
@@ -192,6 +194,7 @@ function Sidebar({ menus }: { menus: MenuNode[] }) {
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
+  const { showError } = useNotification();
   const router = useRouter();
   const [menus, setMenus] = useState<MenuNode[]>([]);
   const [menusLoading, setMenusLoading] = useState(true);
@@ -204,10 +207,16 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isAuthenticated) return;
-    fetchMenus().then((result) => {
-      setMenus(result);
-      setMenusLoading(false);
-    });
+    fetchMenus()
+      .then((result) => {
+        setMenus(result);
+        setMenusLoading(false);
+      })
+      .catch((err) => {
+        showError(getErrorMessage(err));
+        setMenus([]);
+        setMenusLoading(false);
+      });
   }, [isAuthenticated]);
 
   if (isLoading || !isAuthenticated) {

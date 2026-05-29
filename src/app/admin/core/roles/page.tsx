@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react';
 
 import { DataTable, CrudModal, ConfirmDialog, Badge, PageHeader, OperationToolbar } from '@/components/ui';
 import type { Column, FieldDef } from '@/components/ui';
-import { apiClient, ApiError } from '@/lib/api-client';
+import { apiClient } from '@/lib/api-client';
+import { getErrorMessage } from '@/lib/error-handler';
+import { useNotification } from '@/contexts/notification-context';
 
 interface RolePermission {
   id: number;
@@ -35,6 +37,7 @@ const modalFields: FieldDef[] = [
 ];
 
 export default function RolesPage() {
+  const { showError } = useNotification();
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [selected, setSelected] = useState<Role | null>(null);
@@ -101,8 +104,7 @@ export default function RolesPage() {
       setModalOpen(false);
       setRefreshKey((k) => k + 1);
     } catch (e) {
-      console.error(e);
-      if (e instanceof ApiError) alert(e.message);
+      showError(getErrorMessage(e));
     } finally {
       setSaving(false);
     }
@@ -116,8 +118,7 @@ export default function RolesPage() {
       setDeleteTarget(null);
       setRefreshKey((k) => k + 1);
     } catch (e) {
-      console.error(e);
-      if (e instanceof ApiError) alert(e.message);
+      showError(getErrorMessage(e));
     } finally {
       setDeleting(false);
     }

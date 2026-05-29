@@ -3,7 +3,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { DataTable, CrudModal, ConfirmDialog, LookupDialog, Badge, PageHeader, OperationToolbar } from '@/components/ui';
 import type { Column, FieldDef, LookupConfig } from '@/components/ui';
-import { apiClient, ApiError } from '@/lib/api-client';
+import { apiClient } from '@/lib/api-client';
+import { getErrorMessage } from '@/lib/error-handler';
+import { useNotification } from '@/contexts/notification-context';
 import { formatPrice, formatPersianDate } from '@/lib/format';
 
 interface Device {
@@ -65,6 +67,7 @@ const modalFields: FieldDef[] = [
 ];
 
 export default function DevicesPage() {
+  const { showError } = useNotification();
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [selected, setSelected] = useState<Device | null>(null);
@@ -131,8 +134,7 @@ export default function DevicesPage() {
       setModalOpen(false);
       setRefreshKey((k) => k + 1);
     } catch (e) {
-      console.error(e);
-      if (e instanceof ApiError) alert(e.message);
+      showError(getErrorMessage(e));
     } finally {
       setSaving(false);
     }
@@ -146,8 +148,7 @@ export default function DevicesPage() {
       setDeleteTarget(null);
       setRefreshKey((k) => k + 1);
     } catch (e) {
-      console.error(e);
-      if (e instanceof ApiError) alert(e.message);
+      showError(getErrorMessage(e));
     } finally {
       setDeleting(false);
     }
@@ -303,7 +304,7 @@ export default function DevicesPage() {
       key: 'sale',
       header: 'فروش',
       render: (v, row) => {
-        const sale = v as { id?: number; salePrice?: number } | undefined;
+        const sale = v as { id?: number; salePrice?: number; saleCurrency?: { symbol?: string } } | undefined;
         const r = row as Device;
         if (!r.saleId) return <span className="text-muted">—</span>;
         const symbol = sale?.saleCurrency?.symbol ?? r.currency?.symbol ?? '';

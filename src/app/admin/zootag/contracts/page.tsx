@@ -3,8 +3,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { DataTable, CrudModal, ConfirmDialog, LookupDialog, Badge, PageHeader, OperationToolbar } from '@/components/ui';
 import type { Column, FieldDef, LookupConfig } from '@/components/ui';
-import { apiClient, ApiError } from '@/lib/api-client';
+import { apiClient } from '@/lib/api-client';
 import { formatPrice, formatPersianDate } from '@/lib/format';
+import { getErrorMessage } from '@/lib/error-handler';
+import { useNotification } from '@/contexts/notification-context';
 
 interface Contract {
   id: number;
@@ -123,6 +125,7 @@ const priceModalFields: FieldDef[] = [
 ];
 
 export default function ContractsPage() {
+  const { showError } = useNotification();
   // Contract CRUD
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
@@ -238,8 +241,7 @@ export default function ContractsPage() {
       setModalOpen(false);
       setRefreshKey((k) => k + 1);
     } catch (e) {
-      console.error(e);
-      if (e instanceof ApiError) alert(e.message);
+      showError(getErrorMessage(e));
     } finally {
       setSaving(false);
     }
@@ -253,8 +255,7 @@ export default function ContractsPage() {
       setDeleteTarget(null);
       setRefreshKey((k) => k + 1);
     } catch (e) {
-      console.error(e);
-      if (e instanceof ApiError) alert(e.message);
+      showError(getErrorMessage(e));
     } finally {
       setDeleting(false);
     }
@@ -295,8 +296,7 @@ export default function ContractsPage() {
       setPeriodModalOpen(false);
       setPeriodRefreshKey((k) => k + 1);
     } catch (e) {
-      console.error(e);
-      if (e instanceof ApiError) alert(e.message);
+      showError(getErrorMessage(e));
     } finally {
       setPeriodSaving(false);
     }
@@ -310,8 +310,7 @@ export default function ContractsPage() {
       setPeriodDeleteTarget(null);
       setPeriodRefreshKey((k) => k + 1);
     } catch (e) {
-      console.error(e);
-      if (e instanceof ApiError) alert(e.message);
+      showError(getErrorMessage(e));
     } finally {
       setPeriodDeleting(false);
     }
@@ -356,8 +355,7 @@ export default function ContractsPage() {
       setPriceModalOpen(false);
       setPriceRefreshKey((k) => k + 1);
     } catch (e) {
-      console.error(e);
-      if (e instanceof ApiError) alert(e.message);
+      showError(getErrorMessage(e));
     } finally {
       setPriceSaving(false);
     }
@@ -371,8 +369,7 @@ export default function ContractsPage() {
       setPriceDeleteTarget(null);
       setPriceRefreshKey((k) => k + 1);
     } catch (e) {
-      console.error(e);
-      if (e instanceof ApiError) alert(e.message);
+      showError(getErrorMessage(e));
     } finally {
       setPriceDeleting(false);
     }

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, type ReactNode } from 'react';
-import { apiClient } from '@/lib/api-client';
+import { apiClient, ApiError } from '@/lib/api-client';
+import { getErrorMessage } from '@/lib/error-handler';
 
 export interface Column<T> {
   key: string;
@@ -39,6 +40,7 @@ export function DataTable<T>({
   const [data, setData] = useState<T[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [offset, setOffset] = useState(0);
@@ -90,6 +92,8 @@ export function DataTable<T>({
       if (debouncedSearch) params.search = debouncedSearch;
     }
 
+    setError(null);
+
     apiClient
       .get<T[]>(apiEndpoint, params)
       .then(({ result, total: count }) => {
@@ -98,10 +102,11 @@ export function DataTable<T>({
           setTotal(count ?? 0);
         }
       })
-      .catch(() => {
+      .catch((err) => {
         if (!cancelled) {
           setData([]);
           setTotal(0);
+          setError(getErrorMessage(err));
         }
       })
       .finally(() => {
@@ -172,6 +177,13 @@ export function DataTable<T>({
         {loading ? (
           <div className="flex h-48 items-center justify-center">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          </div>
+        ) : error ? (
+          <div className="flex h-48 flex-col items-center justify-center gap-2">
+            <svg className="h-8 w-8 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+            <p className="text-sm text-danger">{error}</p>
           </div>
         ) : data.length === 0 ? (
           <div className="flex h-48 items-center justify-center">

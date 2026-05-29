@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 
 import { DataTable, CrudModal, ConfirmDialog, Badge, PageHeader, OperationToolbar } from '@/components/ui';
 import type { Column, FieldDef } from '@/components/ui';
-import { apiClient, ApiError } from '@/lib/api-client';
+import { apiClient } from '@/lib/api-client';
+import { getErrorMessage } from '@/lib/error-handler';
+import { useNotification } from '@/contexts/notification-context';
 
 interface PetBreed {
   id: number;
@@ -21,6 +23,7 @@ const modalFields: FieldDef[] = [
 ];
 
 export default function PetBreedsPage() {
+  const { showError } = useNotification();
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [selected, setSelected] = useState<PetBreed | null>(null);
@@ -36,7 +39,7 @@ export default function PetBreedsPage() {
     if (!modalOpen) return;
     (async () => {
       try {
-        const { result } = await apiClient.get<{ id: number; name: string }[]>('/v1/api/zootag/admin/PetTypes');
+        const { result } = await apiClient.get<{ id: number; name: string }[]>('/v1/api/zootag/admin/petTypes');
         setPetTypeOptions(result.map((s) => ({ value: s.id, label: s.name })));
       } catch {
         setPetTypeOptions([]);
@@ -67,15 +70,14 @@ export default function PetBreedsPage() {
         isActive: values.isActive,
       };
       if (modalMode === 'create') {
-        await apiClient.post('/v1/api/zootag/admin/PetBreedes', payload);
+        await apiClient.post('/v1/api/zootag/admin/petBreeds', payload);
       } else {
-        await apiClient.put(`/v1/api/zootag/admin/PetBreedes/${selected!.id}`, payload);
+        await apiClient.put(`/v1/api/zootag/admin/petBreeds/${selected!.id}`, payload);
       }
       setModalOpen(false);
       setRefreshKey((k) => k + 1);
     } catch (e) {
-      console.error(e);
-      if (e instanceof ApiError) alert(e.message);
+      showError(getErrorMessage(e));
     } finally {
       setSaving(false);
     }
@@ -85,12 +87,11 @@ export default function PetBreedsPage() {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      await apiClient.delete(`/v1/api/zootag/admin/PetBreedes/${deleteTarget.id}`);
+      await apiClient.delete(`/v1/api/zootag/admin/petBreeds/${deleteTarget.id}`);
       setDeleteTarget(null);
       setRefreshKey((k) => k + 1);
     } catch (e) {
-      console.error(e);
-      if (e instanceof ApiError) alert(e.message);
+      showError(getErrorMessage(e));
     } finally {
       setDeleting(false);
     }
@@ -202,7 +203,7 @@ export default function PetBreedsPage() {
       <DataTable
         key={refreshKey}
         columns={columns}
-        apiEndpoint="/v1/api/zootag/admin/PetBreedes"
+        apiEndpoint="/v1/api/zootag/admin/petBreeds"
         title="نژادها"
         description="مدیریت نژادهای پت"
         hideHeader

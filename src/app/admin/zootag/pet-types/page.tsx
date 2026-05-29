@@ -4,7 +4,9 @@ import { useState } from 'react';
 
 import { DataTable, CrudModal, ConfirmDialog, Badge, PageHeader, OperationToolbar } from '@/components/ui';
 import type { Column, FieldDef } from '@/components/ui';
-import { apiClient, ApiError } from '@/lib/api-client';
+import { apiClient } from '@/lib/api-client';
+import { getErrorMessage } from '@/lib/error-handler';
+import { useNotification } from '@/contexts/notification-context';
 
 interface PetType {
   id: number;
@@ -19,6 +21,7 @@ const modalFields: FieldDef[] = [
 ];
 
 export default function PetTypesPage() {
+  const { showError } = useNotification();
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [selected, setSelected] = useState<PetType | null>(null);
@@ -48,15 +51,14 @@ export default function PetTypesPage() {
         isActive: values.isActive,
       };
       if (modalMode === 'create') {
-        await apiClient.post('/v1/api/zootag/admin/PetTypes', payload);
+        await apiClient.post('/v1/api/zootag/admin/petTypes', payload);
       } else {
-        await apiClient.put(`/v1/api/zootag/admin/PetTypes/${selected!.id}`, payload);
+        await apiClient.put(`/v1/api/zootag/admin/petTypes/${selected!.id}`, payload);
       }
       setModalOpen(false);
       setRefreshKey((k) => k + 1);
     } catch (e) {
-      console.error(e);
-      if (e instanceof ApiError) alert(e.message);
+      showError(getErrorMessage(e));
     } finally {
       setSaving(false);
     }
@@ -66,12 +68,11 @@ export default function PetTypesPage() {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      await apiClient.delete(`/v1/api/zootag/admin/PetTypes/${deleteTarget.id}`);
+      await apiClient.delete(`/v1/api/zootag/admin/petTypes/${deleteTarget.id}`);
       setDeleteTarget(null);
       setRefreshKey((k) => k + 1);
     } catch (e) {
-      console.error(e);
-      if (e instanceof ApiError) alert(e.message);
+      showError(getErrorMessage(e));
     } finally {
       setDeleting(false);
     }
@@ -146,7 +147,7 @@ export default function PetTypesPage() {
       <DataTable
         key={refreshKey}
         columns={columns}
-        apiEndpoint="/v1/api/zootag/admin/PetTypes"
+        apiEndpoint="/v1/api/zootag/admin/petTypes"
         title="انواع پت"
         description="مدیریت انواع پت"
         hideHeader

@@ -3,8 +3,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { DataTable, CrudModal, ConfirmDialog, LookupDialog, Badge, PageHeader, OperationToolbar } from '@/components/ui';
 import type { Column, FieldDef, LookupConfig } from '@/components/ui';
-import { apiClient, ApiError } from '@/lib/api-client';
+import { apiClient } from '@/lib/api-client';
 import { formatPrice, formatPersianDate } from '@/lib/format';
+import { getErrorMessage } from '@/lib/error-handler';
+import { useNotification } from '@/contexts/notification-context';
 
 interface CommissionSettlement {
   id: number;
@@ -55,6 +57,7 @@ const modalFields: FieldDef[] = [
 ];
 
 export default function CommissionSettlementsPage() {
+  const { showError } = useNotification();
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [selected, setSelected] = useState<CommissionSettlement | null>(null);
@@ -125,7 +128,7 @@ export default function CommissionSettlementsPage() {
       setModalOpen(false);
       setRefreshKey((k) => k + 1);
     } catch (e) {
-      if (e instanceof ApiError) alert(e.message);
+      showError(getErrorMessage(e));
     } finally {
       setSaving(false);
     }
@@ -139,7 +142,7 @@ export default function CommissionSettlementsPage() {
       setDeleteTarget(null);
       setRefreshKey((k) => k + 1);
     } catch (e) {
-      if (e instanceof ApiError) alert(e.message);
+      showError(getErrorMessage(e));
     } finally {
       setDeleting(false);
     }

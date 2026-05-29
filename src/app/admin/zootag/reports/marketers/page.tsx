@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { Badge, PersianDatePicker, LookupDialog } from '@/components/ui';
 import type { LookupConfig } from '@/components/ui';
 import { apiClient } from '@/lib/api-client';
+import { getErrorMessage } from '@/lib/error-handler';
+import { useNotification } from '@/contexts/notification-context';
 import { formatPrice } from '@/lib/format';
 
 interface MarketerPerformance {
@@ -44,6 +46,7 @@ const marketerLookupConfig: LookupConfig = {
 };
 
 export default function MarketerReportPage() {
+  const { showError } = useNotification();
   useEffect(() => {
     document.title = 'گزارش عملکرد بازاریاب‌ها | زوتگ';
   }, []);
@@ -99,7 +102,7 @@ export default function MarketerReportPage() {
         perfs.sort((a, b) => b.totalNetProfitIRR - a.totalNetProfitIRR);
         setPerformances(perfs);
       } catch (e) {
-        console.error(e);
+        showError(getErrorMessage(e));
       } finally {
         setLoading(false);
       }

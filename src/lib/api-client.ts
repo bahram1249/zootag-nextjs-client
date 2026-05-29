@@ -1,4 +1,4 @@
-import type { ApiSuccessResponse, ApiErrorResponse } from "./api-types";
+import type { ApiSuccessResponse, ApiErrorResponse, NetworkErrorResponse } from "./api-types";
 
 interface TokenRefreshResponse {
   access_token: string;
@@ -11,12 +11,24 @@ interface TokenRefreshResponse {
 export class ApiError extends Error {
   public readonly statusCode: number;
   public readonly errors: string[];
+  public readonly isNetworkError: boolean;
 
-  constructor(response: ApiErrorResponse) {
+  constructor(response: ApiErrorResponse | NetworkErrorResponse) {
     super(response.message);
     this.name = "ApiError";
     this.statusCode = response.statusCode;
     this.errors = response.errors;
+    this.isNetworkError = response.statusCode === 0;
+  }
+
+  static fromNetworkError(path?: string): ApiError {
+    return new ApiError({
+      statusCode: 0,
+      message: "Failed to fetch",
+      errors: ["خطا در ارتباط با سرور"],
+      timestamp: new Date().toISOString(),
+      path,
+    });
   }
 }
 
@@ -335,17 +347,21 @@ class ApiClient {
   ): Promise<ApiSuccessResponse<T>> {
     const url = buildUrl(this.baseUrl, config.path, config.params);
 
-    // Log request for debugging
-    console.log(`Making ${config.method} request to:`, url);
-
-    const response = await fetch(url, {
-      method: config.method,
-      headers: buildHeaders(this.token),
-      body: config.body ? JSON.stringify(config.body) : undefined,
-      signal: config.signal,
-    });
-
-    console.log(`Response status for ${config.path}:`, response.status);
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        method: config.method,
+        headers: buildHeaders(this.token),
+        body: config.body ? JSON.stringify(config.body) : undefined,
+        signal: config.signal,
+      });
+    } catch (error) {
+      // Network error — backend is unreachable
+      if (error instanceof TypeError) {
+        throw ApiError.fromNetworkError(config.path);
+      }
+      throw error;
+    }
 
     if (!response.ok) {
       let errorPayload: ApiErrorResponse;
@@ -366,7 +382,17 @@ class ApiClient {
       throw new ApiError(errorPayload);
     }
 
-    return (await response.json()) as ApiSuccessResponse<T>;
+    try {
+      return (await response.json()) as ApiSuccessResponse<T>;
+    } catch {
+      throw new ApiError({
+        statusCode: response.status,
+        message: "Invalid response format",
+        errors: ["فرمت پاسخ سرور نامعتبر است"],
+        timestamp: new Date().toISOString(),
+        path: config.path,
+      });
+    }
   }
 
   async get<T>(

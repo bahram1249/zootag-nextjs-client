@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { apiClient, ApiError } from '@/lib/api-client';
+import { apiClient } from '@/lib/api-client';
+import { getErrorMessage } from '@/lib/error-handler';
+import { useNotification } from '@/contexts/notification-context';
 import type { Column } from './data-table';
 import { ConfirmDialog } from './confirm-dialog';
 import { CrudModal } from './crud-modal';
@@ -50,6 +52,8 @@ export function LookupDialog({
 
   const [deleteTarget, setDeleteTarget] = useState<Record<string, unknown> | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  const { showError } = useNotification();
 
   useEffect(() => {
     const el = dialogRef.current;
@@ -111,23 +115,23 @@ export function LookupDialog({
       }
       setCrudOpen(false);
       setRefreshKey((k) => k + 1);
-    } catch (e) {
-      if (e instanceof ApiError) alert(e.message);
-    } finally {
-      setSaving(false);
-    }
-  };
+      } catch (e) {
+        showError(getErrorMessage(e));
+      } finally {
+        setSaving(false);
+      }
+    };
 
-  const handleCrudDelete = async () => {
-    if (!deleteTarget) return;
-    setDeleting(true);
-    try {
-      await apiClient.delete(`${config.endpoint}/${deleteTarget.id}`);
-      setDeleteTarget(null);
-      setRefreshKey((k) => k + 1);
-    } catch (e) {
-      if (e instanceof ApiError) alert(e.message);
-    } finally {
+    const handleCrudDelete = async () => {
+      if (!deleteTarget) return;
+      setDeleting(true);
+      try {
+        await apiClient.delete(`${config.endpoint}/${deleteTarget.id}`);
+        setDeleteTarget(null);
+        setRefreshKey((k) => k + 1);
+      } catch (e) {
+        showError(getErrorMessage(e));
+      } finally {
       setDeleting(false);
     }
   };

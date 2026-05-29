@@ -4,7 +4,9 @@ import { useRef, useState } from 'react';
 
 import { DataTable, CrudModal, ConfirmDialog, LookupDialog, Badge, PageHeader, OperationToolbar } from '@/components/ui';
 import type { Column, FieldDef, LookupConfig } from '@/components/ui';
-import { apiClient, ApiError } from '@/lib/api-client';
+import { apiClient } from '@/lib/api-client';
+import { getErrorMessage } from '@/lib/error-handler';
+import { useNotification } from '@/contexts/notification-context';
 
 interface DeviceType {
   id: number;
@@ -38,6 +40,7 @@ const manufacturerLookupConfig: LookupConfig = {
 };
 
 export default function DeviceTypesPage() {
+  const { showError } = useNotification();
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [selected, setSelected] = useState<DeviceType | null>(null);
@@ -85,8 +88,7 @@ export default function DeviceTypesPage() {
       setModalOpen(false);
       setRefreshKey((k) => k + 1);
     } catch (e) {
-      console.error(e);
-      if (e instanceof ApiError) alert(e.message);
+      showError(getErrorMessage(e));
     } finally {
       setSaving(false);
     }
@@ -100,8 +102,7 @@ export default function DeviceTypesPage() {
       setDeleteTarget(null);
       setRefreshKey((k) => k + 1);
     } catch (e) {
-      console.error(e);
-      if (e instanceof ApiError) alert(e.message);
+      showError(getErrorMessage(e));
     } finally {
       setDeleting(false);
     }

@@ -15,3 +15,11 @@ export interface ApiErrorResponse {
   timestamp: string;
   path: string;
 }
+
+export interface NetworkErrorResponse {
+  statusCode: 0;
+  message: string;
+  errors: string[];
+  timestamp: string;
+  path?: string;
+}
