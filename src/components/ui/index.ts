@@ -17,4 +17,5 @@ export type { BreadcrumbItem } from './page-header';
 export { OperationToolbar } from './operation-toolbar';
 export type { OperationButton } from './operation-toolbar';
 export { Icon } from './icon';
+export { Slider } from './slider';
 export { useNotification } from '@/contexts/notification-context';
